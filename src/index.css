@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DungGeunMo retro pixel font — 픽셀아트 타이틀 전용 */
+@font-face {
+  font-family: 'DungGeunMo';
+  src: url('/fonts/DungGeunMo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Nunito', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* 헤더 가로 스크롤바 숨김 (기능은 유지) */
+.header-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.header-scrollbar::-webkit-scrollbar { display: none; }
+
+.font-pixel {
+  font-family: 'DungGeunMo', 'Courier New', monospace;
+}
+
+@keyframes pixel-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-18px) rotate(8deg); }
+}
+
+/* 인쇄 전용 헤더 — 화면에서는 숨김 */
+.doan-print-header { display: none; }
+
+@media print {
+  .doan-no-print { display: none !important; }
+
+  body * { visibility: hidden; }
+  #doan-print-area,
+  #doan-print-area * { visibility: visible; }
+
+  /* 인쇄 전용 헤더 표시 */
+  .doan-print-header { display: block !important; }
+
+  /* 전체 인쇄 영역 레이아웃 */
+  #doan-print-area {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10mm 14mm;
+    background: white;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column;
+    gap: 5mm;
+    overflow: visible;
+  }
+
+  /* 캔버스 래퍼 — A4에 맞게 가운데 정렬, 불필요한 스타일 제거 */
+  .doan-canvas-wrap {
+    display: flex !important;
+    justify-content: center !important;
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  /* 캔버스 — 종이 너비에 맞게 축소, 비율 유지, 높이 제한으로 레이아웃 균형 */
+  #doan-print-area canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    max-height: 155mm;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* 색상 가이드 — 가로 꽉 채우고 배경/그림자 제거, 구분선으로 분리 */
+  .doan-legend-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    border-top: 1.5px solid #E5E7EB;
+    padding-top: 4mm !important;
+  }
+}
