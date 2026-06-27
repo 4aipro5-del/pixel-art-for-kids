@@ -26,3 +26,6 @@ yarn-error.log*
 
 # Vite
 vite.config.js.timestamp-*
+
+# Root-level duplicate font (실제 파일은 public/fonts/ 에 있음)
+DungGeunMo.ttf

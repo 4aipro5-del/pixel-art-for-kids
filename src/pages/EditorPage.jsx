@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import PixelCanvas from '../components/PixelCanvas'
 import SketchbookModal from '../components/SketchbookModal'
 import DoanView from '../components/DoanView'
-import { uploadWallPost } from '../firebase'
+import { uploadWallPost, saveArtwork } from '../firebase'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixelart_sketchbook'
@@ -211,6 +211,8 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     setUploading(true)
     try {
       await uploadWallPost(userName, getDataURL(512))
+      // 픽셀 데이터도 artworks 컬렉션에 저장 (진입 화면 갤러리용)
+      saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
       showToast('담벼락에 올렸어요!')
       onGoToWall()
     } catch (err) {
@@ -219,6 +221,12 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     } finally {
       setUploading(false)
     }
+  }
+
+  const handleOpenDoan = () => {
+    // 도안 만들기 진입 시 작품 저장
+    saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
+    setDoanMode(true)
   }
 
   // Keyboard shortcuts via stable refs
@@ -275,7 +283,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
           <div className="flex items-center gap-1.5 shrink-0">
             <HeaderBtn onClick={handleSavePNG}>↓ PNG 저장</HeaderBtn>
             <HeaderBtn onClick={handleSaveSketchbook}>◉ 스케치북</HeaderBtn>
-            <HeaderBtn onClick={() => setDoanMode(true)}>◈ 도안 만들기</HeaderBtn>
+            <HeaderBtn onClick={handleOpenDoan}>◈ 도안 만들기</HeaderBtn>
             <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary">
               {uploading ? '올리는 중…' : '↗ 담벼락 공유'}
             </HeaderBtn>
