@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
-const ACCENT = '#7C6AFF'
+const ACCENT = '#10B981'
 
 const RATIOS = [
   {
@@ -58,7 +58,6 @@ const RESOLUTIONS = [
   },
 ]
 
-const FLOATER_COLORS = ['#F87171','#FB923C','#FCD34D','#4ADE80','#38BDF8','#6366F1','#C084FC','#F472B6']
 
 function getGrid(ratio, res) {
   if (ratio === '1:1')  return { cols: res, rows: res }
@@ -93,45 +92,10 @@ function MiniGrid({ count, size, active }) {
 export default function SetupPage({ onNext }) {
   const [ratio, setRatio] = useState('1:1')
   const [resolution, setResolution] = useState(16)
-  const [floaters, setFloaters] = useState([])
   const grid = getGrid(ratio, resolution)
 
-  useEffect(() => {
-    setFloaters(
-      Array.from({ length: 22 }, (_, i) => ({
-        id: i,
-        color: FLOATER_COLORS[i % FLOATER_COLORS.length],
-        size: 10 + (i * 7) % 26,
-        left: (i * 41 + 9) % 96,
-        top: (i * 29 + 13) % 92,
-        duration: 2.5 + (i % 5) * 0.7,
-        delay: (i % 6) * 0.5,
-        opacity: 0.1 + (i % 4) * 0.05,
-      }))
-    )
-  }, [])
-
   return (
-    <div
-      className="relative h-screen w-screen overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #FEF9C3 0%, #FCE7F3 35%, #EDE9FE 65%, #DBEAFE 100%)' }}
-    >
-      {/* Floating pixel decorations */}
-      {floaters.map(f => (
-        <div
-          key={f.id}
-          className="absolute rounded-xl pointer-events-none"
-          style={{
-            left: `${f.left}%`,
-            top: `${f.top}%`,
-            width: f.size,
-            height: f.size,
-            background: f.color,
-            opacity: f.opacity,
-            animation: `pixel-float ${f.duration}s ease-in-out ${f.delay}s infinite`,
-          }}
-        />
-      ))}
+    <div className="relative h-screen w-screen overflow-hidden bg-gray-50">
 
       {/* Scrollable main area */}
       <div className="relative z-10 h-full overflow-y-auto">
@@ -163,10 +127,10 @@ export default function SetupPage({ onNext }) {
                       onClick={() => setRatio(r.id)}
                       className="flex flex-col items-center gap-4 py-7 px-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
-                        borderColor: active ? ACCENT : 'rgba(255,255,255,0.7)',
-                        background: active ? `rgba(124,106,255,0.08)` : 'rgba(255,255,255,0.65)',
+                        borderColor: active ? ACCENT : '#E5E7EB',
+                        background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
                         boxShadow: active
-                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(124,106,255,0.18)`
+                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(16,185,129,0.18)`
                           : '0 2px 8px rgba(0,0,0,0.04)',
                       }}
                     >
@@ -211,10 +175,10 @@ export default function SetupPage({ onNext }) {
                       onClick={() => setResolution(res.id)}
                       className="flex flex-col items-center gap-4 py-7 px-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
-                        borderColor: active ? ACCENT : 'rgba(255,255,255,0.7)',
-                        background: active ? `rgba(124,106,255,0.08)` : 'rgba(255,255,255,0.65)',
+                        borderColor: active ? ACCENT : '#E5E7EB',
+                        background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
                         boxShadow: active
-                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(124,106,255,0.18)`
+                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(16,185,129,0.18)`
                           : '0 2px 8px rgba(0,0,0,0.04)',
                       }}
                     >
@@ -251,8 +215,8 @@ export default function SetupPage({ onNext }) {
                   paddingBottom: '1.25rem',
                   paddingLeft: '5rem',
                   paddingRight: '5rem',
-                  background: 'linear-gradient(135deg, #7C6AFF 0%, #A78BFF 100%)',
-                  boxShadow: '0 4px 24px rgba(124,106,255,0.40)',
+                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                  boxShadow: '0 4px 24px rgba(16,185,129,0.40)',
                 }}
               >
                 그림 그리러 가기 →

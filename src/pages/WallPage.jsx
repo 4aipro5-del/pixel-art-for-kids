@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getWallPosts } from '../firebase'
 
-const ACCENT = '#7C6AFF'
+const ACCENT = '#10B981'
 
 const RAINBOW = ['#F87171','#FB923C','#FCD34D','#4ADE80','#38BDF8','#6366F1','#C084FC']
 
@@ -27,7 +27,7 @@ export default function WallPage({ onBack }) {
   }, [])
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ background: '#F4F4FA' }}>
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
 
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="flex items-center gap-4 px-6 h-14 bg-white border-b border-gray-100 flex-shrink-0 z-10">

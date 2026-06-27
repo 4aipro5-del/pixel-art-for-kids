@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react'
 
-const ACCENT = '#7C6AFF'
+const ACCENT = '#10B981'
 
 function getTextColor(hex) {
   if (!hex || hex.length < 7) return '#333333'
@@ -170,7 +170,7 @@ export default function DoanView({ pixels, gridCols, gridRows, onClose }) {
       <div
         id="doan-print-area"
         className="flex-1 overflow-y-auto"
-        style={{ background: '#F4F4F8', padding: 24 }}
+        style={{ background: '#F9FAFB', padding: 24 }}
       >
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: 260 }}>

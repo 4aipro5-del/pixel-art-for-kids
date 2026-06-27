@@ -3,6 +3,7 @@ import EntryPage from './pages/EntryPage'
 import SetupPage from './pages/SetupPage'
 import EditorPage from './pages/EditorPage'
 import WallPage from './pages/WallPage'
+import GalleryPage from './pages/GalleryPage'
 
 export default function App() {
   const [page, setPage] = useState('entry')
@@ -10,7 +11,6 @@ export default function App() {
   const [canvasConfig, setCanvasConfig] = useState({ cols: 16, rows: 16 })
 
   useEffect(() => {
-    // 초기 히스토리 상태 설정
     window.history.replaceState({ page: 'entry' }, '')
     const onPopState = (e) => setPage(e.state?.page || 'entry')
     window.addEventListener('popstate', onPopState)
@@ -27,6 +27,7 @@ export default function App() {
       {page === 'entry' && (
         <EntryPage
           onNext={(name) => { setUserName(name); navigate('setup') }}
+          onGoToGallery={() => navigate('gallery')}
         />
       )}
       {page === 'setup' && (
@@ -45,6 +46,9 @@ export default function App() {
       )}
       {page === 'wall' && (
         <WallPage onBack={() => window.history.back()} />
+      )}
+      {page === 'gallery' && (
+        <GalleryPage onBack={() => window.history.back()} />
       )}
     </div>
   )

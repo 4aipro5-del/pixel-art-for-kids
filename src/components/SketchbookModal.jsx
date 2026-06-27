@@ -57,7 +57,7 @@ export default function SketchbookModal({ userName, onClose }) {
               {items.map(item => (
                 <div
                   key={item.id}
-                  className="rounded-xl overflow-hidden border border-gray-100 hover:border-[#7C6AFF]/30 transition-all group bg-gray-50"
+                  className="rounded-xl overflow-hidden border border-gray-100 hover:border-emerald-400/30 transition-all group bg-gray-50"
                 >
                   <div className="aspect-square flex items-center justify-center p-2 relative bg-white">
                     <img

@@ -6,7 +6,7 @@ import { uploadWallPost, saveArtwork } from '../firebase'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixelart_sketchbook'
-const ACCENT = '#7C6AFF'
+const ACCENT = '#10B981'
 
 // 무지개 + 기본 12색 팔레트
 const PASTEL_COLORS = [
@@ -47,7 +47,7 @@ function HeaderBtn({ onClick, disabled, children, variant = 'ghost' }) {
   const styles = {
     ghost:   'text-gray-600 hover:bg-gray-100',
     danger:  'text-gray-500 hover:bg-red-50 hover:text-red-500',
-    primary: `bg-[${ACCENT}] text-white hover:bg-[#6C5AEF]`,
+    primary: 'text-white',
   }
   return (
     <button onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]}`}
@@ -251,7 +251,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const canRedo = future.length > 0
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: '#F4F4F8' }}>
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
 
       {/* ── Header ─────────────────────────────────── */}
       <header className="flex-shrink-0 z-10 h-12 bg-white border-b border-gray-100 overflow-x-auto header-scrollbar">
@@ -299,7 +299,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
         ) : (<>
 
         {/* ── Left Sidebar ───────────────────────── */}
-        <aside className="w-60 bg-[#F4F4F8] border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto">
+        <aside className="w-60 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto">
           <div className="flex flex-col gap-4 p-4 flex-1">
 
             {/* Tools */}
@@ -312,7 +312,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                     onClick={() => t.id === 'eyedropper' ? handleEyedrop(tool) : setTool(t.id)}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                       tool === t.id
-                        ? 'text-[#7C6AFF] font-semibold shadow-sm'
+                        ? 'text-emerald-600 font-semibold shadow-sm'
                         : 'text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-sm font-medium'
                     }`}
                     style={tool === t.id ? { background: `${ACCENT}18` } : undefined}
@@ -336,7 +336,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                     onClick={() => setBrushSize(b.id)}
                     className={`flex flex-col items-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all duration-200 ${
                       brushSize === b.id
-                        ? 'text-[#7C6AFF] shadow-sm'
+                        ? 'text-emerald-600 shadow-sm'
                         : 'bg-white text-gray-500 hover:shadow-sm hover:text-gray-700'
                     }`}
                     style={brushSize === b.id ? { background: `${ACCENT}18` } : undefined}
@@ -492,7 +492,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 <span className="text-[10px] text-gray-300">25%</span>
                 <button
                   onClick={() => setZoom(1)}
-                  className="text-[10px] text-gray-400 hover:text-[#7C6AFF] transition-colors font-semibold"
+                  className="text-[10px] text-gray-400 hover:text-emerald-600 transition-colors font-semibold"
                 >
                   초기화
                 </button>
@@ -620,8 +620,8 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 onClick={() => { setShowBackModal(false); onGoToSetup() }}
                 className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
                 style={{
-                  background: 'linear-gradient(135deg, #7C6AFF 0%, #A78BFF 100%)',
-                  boxShadow: '0 4px 16px rgba(124,106,255,0.35)',
+                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                  boxShadow: '0 4px 16px rgba(16,185,129,0.35)',
                 }}
               >
                 확인
