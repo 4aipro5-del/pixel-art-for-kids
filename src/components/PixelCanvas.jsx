@@ -241,7 +241,7 @@ export default function PixelCanvas({
     <div
       ref={containerRef}
       className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 sm:p-6"
-      style={{ background: '#F3F4F6' }}
+      style={{ background: '#1e252b' }}
     >
       <div style={{ position: 'relative' }}>
         {tracingImage && (
@@ -263,8 +263,8 @@ export default function PixelCanvas({
           ref={canvasRef}
           style={{
             touchAction: 'none',
-            boxShadow: '0 4px 32px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
-            border: '1px solid rgba(0,0,0,0.05)',
+            boxShadow: '0 12px 48px rgba(0,0,0,0.55)',
+            border: '1px solid rgba(255,255,255,0.08)',
             display: 'block',
           }}
         />
