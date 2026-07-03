@@ -42,18 +42,176 @@ function SectionLabel({ children }) {
   )
 }
 
-function HeaderBtn({ onClick, disabled, children, variant = 'ghost' }) {
-  const base = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
+function HeaderBtn({ onClick, disabled, children, variant = 'ghost', className = '' }) {
+  const base = 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
   const styles = {
     ghost:   'text-gray-600 hover:bg-gray-100',
     danger:  'text-gray-500 hover:bg-red-50 hover:text-red-500',
     primary: 'text-white',
   }
   return (
-    <button onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]}`}
+    <button onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]} ${className}`}
       style={variant === 'primary' ? { background: ACCENT } : undefined}>
       {children}
     </button>
+  )
+}
+
+function MobileEditorControls({
+  tool,
+  onToolChange,
+  onEyedropper,
+  brushSize,
+  onBrushSizeChange,
+  selectedColor,
+  onColorChange,
+  recentColors,
+  zoom,
+  onZoomChange,
+  onZoomReset,
+  onClearAll,
+  onSavePNG,
+  onSaveSketchbook,
+  onOpenDoan,
+  tracingImage,
+  tracingOpacity,
+  onTracingOpacityChange,
+  onTracingRemove,
+  tracingInputRef,
+  onTracingUpload,
+}) {
+  const toolButtonClass = 'h-11 rounded-xl text-sm font-bold transition-all active:scale-95'
+  const actionButtonClass = 'h-10 rounded-xl px-3 text-xs font-bold text-gray-600 bg-gray-100 whitespace-nowrap active:scale-95'
+
+  return (
+    <div className="md:hidden flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+      <div
+        className="px-3 pt-2 pb-3"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="grid grid-cols-3 gap-1.5 flex-1">
+            {TOOLS.map(t => {
+              const active = tool === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => t.id === 'eyedropper' ? onEyedropper() : onToolChange(t.id)}
+                  className={`${toolButtonClass} ${active ? 'text-emerald-600 shadow-sm' : 'text-gray-500 bg-gray-100'}`}
+                  style={active ? { background: `${ACCENT}18` } : undefined}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5 w-24">
+            {[
+              { id: 1, label: '1칸' },
+              { id: 2, label: '4칸' },
+            ].map(b => (
+              <button
+                key={b.id}
+                onClick={() => onBrushSizeChange(b.id)}
+                className={`${toolButtonClass} text-xs ${brushSize === b.id ? 'text-emerald-600 shadow-sm' : 'text-gray-500 bg-gray-100'}`}
+                style={brushSize === b.id ? { background: `${ACCENT}18` } : undefined}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
+          <div
+            className="w-10 h-10 rounded-xl border border-black/10 flex-shrink-0"
+            style={{ background: selectedColor }}
+          />
+          {[...PASTEL_COLORS, ...recentColors].filter((color, index, all) => all.indexOf(color) === index).map(color => (
+            <button
+              key={color}
+              onClick={() => onColorChange(color)}
+              aria-label={`${color} 색상 선택`}
+              className="w-9 h-9 rounded-xl flex-shrink-0 active:scale-95"
+              style={{
+                background: color,
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.08)',
+                outline: selectedColor === color ? `2.5px solid ${ACCENT}` : 'none',
+                outlineOffset: '2px',
+              }}
+            />
+          ))}
+          <label className="h-9 px-3 rounded-xl bg-gray-100 text-xs font-bold text-gray-500 flex items-center flex-shrink-0">
+            직접
+            <input
+              type="color"
+              value={selectedColor === '#FFFFFF' ? '#FFFFFF' : selectedColor}
+              onChange={e => onColorChange(e.target.value)}
+              className="sr-only"
+            />
+          </label>
+        </div>
+
+        <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
+          <button onClick={onClearAll} className={`${actionButtonClass} hover:bg-red-50 hover:text-red-500`}>전체 지우기</button>
+          <button onClick={onSavePNG} className={actionButtonClass}>PNG 저장</button>
+          <button onClick={onSaveSketchbook} className={actionButtonClass}>스케치북</button>
+          <button onClick={onOpenDoan} className={actionButtonClass}>도안 만들기</button>
+          <label className={`${actionButtonClass} flex items-center`}>
+            밑그림
+            <input
+              ref={tracingInputRef}
+              type="file"
+              accept="image/png"
+              className="hidden"
+              onChange={onTracingUpload}
+            />
+          </label>
+        </div>
+
+        {tracingImage && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="w-12 text-[11px] font-extrabold text-gray-400">밑그림</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(tracingOpacity * 100)}
+              onChange={e => onTracingOpacityChange(Number(e.target.value) / 100)}
+              className="flex-1 cursor-pointer"
+              style={{ accentColor: ACCENT }}
+            />
+            <button
+              onClick={onTracingRemove}
+              className="h-8 rounded-lg px-2 text-[11px] font-bold text-red-400 bg-red-50"
+            >
+              지우기
+            </button>
+          </div>
+        )}
+
+        <div className="mt-2 flex items-center gap-2">
+          <span className="w-12 text-[11px] font-extrabold text-gray-400">확대</span>
+          <input
+            type="range"
+            min={0.25}
+            max={4}
+            step={0.25}
+            value={zoom}
+            onChange={e => onZoomChange(Number(e.target.value))}
+            className="flex-1 cursor-pointer"
+            style={{ accentColor: ACCENT }}
+          />
+          <button
+            onClick={onZoomReset}
+            className="h-8 min-w-12 rounded-lg px-2 text-[11px] font-bold text-emerald-600 bg-emerald-50"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -254,33 +412,42 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
 
       {/* ── Header ─────────────────────────────────── */}
-      <header className="flex-shrink-0 z-10 h-12 bg-white border-b border-gray-100 overflow-x-auto header-scrollbar">
-        <div className="flex items-center justify-between gap-3 px-5 h-full min-w-max">
+      <header className="flex-shrink-0 z-10 h-14 md:h-12 bg-white border-b border-gray-100 overflow-hidden md:overflow-x-auto header-scrollbar">
+        <div className="flex items-center justify-between gap-2 px-3 md:px-5 h-full min-w-0 md:min-w-max">
 
           {/* Brand + 이전 단계 */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 md:gap-2.5 min-w-0">
             <div className="flex gap-1">
               {PASTEL_COLORS.slice(0, 4).map((c, i) => (
                 <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
               ))}
             </div>
             <span className="text-base font-black text-gray-900 tracking-tight whitespace-nowrap">픽셀아트</span>
-            <div className="w-px h-4 bg-gray-200 shrink-0" />
-            <span className="text-sm text-gray-400 font-medium whitespace-nowrap">{userName}</span>
-            <div className="w-px h-4 bg-gray-200 shrink-0" />
-            <HeaderBtn onClick={() => setShowBackModal(true)}>← 이전 단계</HeaderBtn>
+            <div className="hidden sm:block w-px h-4 bg-gray-200 shrink-0" />
+            <span className="hidden sm:inline text-sm text-gray-400 font-medium whitespace-nowrap">{userName}</span>
+            <div className="hidden md:block w-px h-4 bg-gray-200 shrink-0" />
+            <HeaderBtn onClick={() => setShowBackModal(true)}>
+              <span className="hidden sm:inline">← 이전 단계</span>
+              <span className="sm:hidden">←</span>
+            </HeaderBtn>
           </div>
 
           {/* Edit controls */}
           <div className="flex items-center gap-0.5 shrink-0">
-            <HeaderBtn onClick={handleUndo} disabled={!canUndo}>↩ 되돌리기</HeaderBtn>
-            <HeaderBtn onClick={handleRedo} disabled={!canRedo}>↪ 다시하기</HeaderBtn>
-            <div className="w-px h-4 bg-gray-200 mx-1.5 shrink-0" />
-            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger">✕ 전체 지우기</HeaderBtn>
+            <HeaderBtn onClick={handleUndo} disabled={!canUndo}>
+              <span className="hidden sm:inline">↩ 되돌리기</span>
+              <span className="sm:hidden">↩</span>
+            </HeaderBtn>
+            <HeaderBtn onClick={handleRedo} disabled={!canRedo}>
+              <span className="hidden sm:inline">↪ 다시하기</span>
+              <span className="sm:hidden">↪</span>
+            </HeaderBtn>
+            <div className="hidden md:block w-px h-4 bg-gray-200 mx-1.5 shrink-0" />
+            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" className="hidden md:flex">✕ 전체 지우기</HeaderBtn>
           </div>
 
           {/* Save actions */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="hidden md:flex items-center gap-1.5 shrink-0">
             <HeaderBtn onClick={handleSavePNG}>↓ PNG 저장</HeaderBtn>
             <HeaderBtn onClick={handleSaveSketchbook}>◉ 스케치북</HeaderBtn>
             <HeaderBtn onClick={handleOpenDoan}>◈ 도안 만들기</HeaderBtn>
@@ -289,17 +456,21 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             </HeaderBtn>
           </div>
 
+          <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" className="md:hidden">
+            {uploading ? '중…' : '공유'}
+          </HeaderBtn>
+
         </div>
       </header>
 
       {/* ── Body ───────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {doanMode ? (
           <DoanView pixels={pixels} gridCols={gridCols} gridRows={gridRows} onClose={() => setDoanMode(false)} />
         ) : (<>
 
         {/* ── Left Sidebar ───────────────────────── */}
-        <aside className="w-60 bg-gray-50 border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto">
+        <aside className="hidden md:flex w-60 bg-gray-50 border-r border-gray-200 flex-col flex-shrink-0 overflow-y-auto">
           <div className="flex flex-col gap-4 p-4 flex-1">
 
             {/* Tools */}
@@ -372,6 +543,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                   <button
                     key={color}
                     onClick={() => setSelectedColor(color)}
+                    aria-label={`${color} 색상 선택`}
                     className="aspect-square rounded-xl transition-transform hover:scale-110 active:scale-95"
                     style={{
                       background: color,
@@ -392,6 +564,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                       <button
                         key={i}
                         onClick={() => setSelectedColor(color)}
+                        aria-label={`${color} 최근 색상 선택`}
                         className="w-7 h-7 rounded-lg transition-transform hover:scale-110 active:scale-95"
                         style={{
                           background: color,
@@ -504,20 +677,46 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
         </aside>
 
         {/* ── Canvas area ────────────────────────── */}
-        <PixelCanvas
-          pixels={pixels}
-          gridCols={gridCols}
-          gridRows={gridRows}
-          selectedColor={selectedColor}
-          tool={tool}
-          brushSize={brushSize}
-          zoom={zoom}
-          onCommit={handleCommit}
-          onColorPick={handleColorPick}
-          onPaintComplete={addRecentColor}
-          tracingImage={tracingImage}
-          tracingOpacity={tracingOpacity}
-        />
+        <div className="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
+          <PixelCanvas
+            pixels={pixels}
+            gridCols={gridCols}
+            gridRows={gridRows}
+            selectedColor={selectedColor}
+            tool={tool}
+            brushSize={brushSize}
+            zoom={zoom}
+            onCommit={handleCommit}
+            onColorPick={handleColorPick}
+            onPaintComplete={addRecentColor}
+            tracingImage={tracingImage}
+            tracingOpacity={tracingOpacity}
+          />
+
+          <MobileEditorControls
+            tool={tool}
+            onToolChange={setTool}
+            onEyedropper={() => handleEyedrop(tool)}
+            brushSize={brushSize}
+            onBrushSizeChange={setBrushSize}
+            selectedColor={selectedColor}
+            onColorChange={setSelectedColor}
+            recentColors={recentColors}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            onZoomReset={() => setZoom(1)}
+            onClearAll={() => setShowClearModal(true)}
+            onSavePNG={handleSavePNG}
+            onSaveSketchbook={handleSaveSketchbook}
+            onOpenDoan={handleOpenDoan}
+            tracingImage={tracingImage}
+            tracingOpacity={tracingOpacity}
+            onTracingOpacityChange={setTracingOpacity}
+            onTracingRemove={() => setTracingImage(null)}
+            tracingInputRef={tracingInputRef}
+            onTracingUpload={handleTracingUpload}
+          />
+        </div>
         </>)}
       </div>
 

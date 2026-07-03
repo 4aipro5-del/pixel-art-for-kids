@@ -93,39 +93,65 @@ export default function SetupPage({ onNext }) {
   const [ratio, setRatio] = useState('1:1')
   const [resolution, setResolution] = useState(16)
   const grid = getGrid(ratio, resolution)
+  const selectedRatio = RATIOS.find(r => r.id === ratio)
+  const selectedResolution = RESOLUTIONS.find(res => res.id === resolution)
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-gray-50">
 
       {/* Scrollable main area */}
       <div className="relative z-10 h-full overflow-y-auto">
-        <div className="min-h-full flex flex-col items-center justify-center py-12 px-6">
-          <div className="w-full max-w-3xl flex flex-col gap-10">
+        <div className="min-h-full flex flex-col items-center justify-start sm:justify-center py-6 sm:py-12 px-6">
+          <div className="w-full max-w-3xl flex flex-col gap-6 sm:gap-10">
 
             {/* Title */}
             <div className="text-center">
               <h1
-                className="font-black text-gray-900 leading-tight mb-3"
+                className="font-black text-gray-900 leading-tight mb-2 sm:mb-3"
                 style={{ fontSize: 'clamp(2.2rem, 6vw, 3.5rem)' }}
               >
                 어떤 크기에 그릴까요?
               </h1>
-              <p className="text-lg text-gray-500">화면 비율과 픽셀 해상도를 골라요</p>
+              <p className="text-base sm:text-lg text-gray-500">화면 비율과 픽셀 해상도를 골라요</p>
+            </div>
+
+            <div className="hidden sm:flex items-center justify-between rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
+                  <div
+                    className="rounded"
+                    style={{
+                      width: selectedRatio.pw * 0.55,
+                      height: selectedRatio.ph * 0.55,
+                      background: ACCENT,
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-gray-400">선택한 캔버스</p>
+                  <p className="text-xl font-black text-gray-900">
+                    {selectedRatio.label} · {grid.cols} × {grid.rows}
+                  </p>
+                </div>
+              </div>
+              <span className={`rounded-xl px-4 py-2 text-sm font-black ${selectedResolution.badgeClass}`}>
+                {selectedResolution.badge}
+              </span>
             </div>
 
             {/* ── 비율 선택 ────────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 화면 비율
               </p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {RATIOS.map(r => {
                   const active = ratio === r.id
                   return (
                     <button
                       key={r.id}
                       onClick={() => setRatio(r.id)}
-                      className="flex flex-col items-center gap-4 py-7 px-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex flex-col items-center gap-2 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-xl sm:rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
                         borderColor: active ? ACCENT : '#E5E7EB',
                         background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
@@ -135,24 +161,24 @@ export default function SetupPage({ onNext }) {
                       }}
                     >
                       {/* 비율 시각화 */}
-                      <div className="flex items-end justify-center h-16">
+                      <div className="flex items-end justify-center h-11 sm:h-16">
                         <div
                           className="rounded transition-all"
                           style={{
-                            width: r.pw,
-                            height: r.ph,
+                            width: `clamp(${Math.round(r.pw * 0.62)}px, 10vw, ${r.pw}px)`,
+                            height: `clamp(${Math.round(r.ph * 0.62)}px, 10vw, ${r.ph}px)`,
                             background: active ? ACCENT : '#D1D5DB',
                           }}
                         />
                       </div>
                       <div className="text-center">
                         <p
-                          className="text-xl font-bold"
+                          className="text-base sm:text-xl font-bold"
                           style={{ color: active ? ACCENT : '#374151' }}
                         >
                           {r.label}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1 leading-snug">{r.sublabel}</p>
+                        <p className="hidden sm:block text-xs text-gray-400 mt-1 leading-snug">{r.sublabel}</p>
                       </div>
                     </button>
                   )
@@ -162,10 +188,10 @@ export default function SetupPage({ onNext }) {
 
             {/* ── 해상도 선택 ──────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 픽셀 해상도
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {RESOLUTIONS.map(res => {
                   const g = getGrid(ratio, res.id)
                   const active = resolution === res.id
@@ -173,7 +199,7 @@ export default function SetupPage({ onNext }) {
                     <button
                       key={res.id}
                       onClick={() => setResolution(res.id)}
-                      className="flex flex-col items-center gap-4 py-7 px-4 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
                         borderColor: active ? ACCENT : '#E5E7EB',
                         background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
@@ -187,18 +213,18 @@ export default function SetupPage({ onNext }) {
 
                       {/* 격자 크기 */}
                       <p
-                        className="text-2xl font-black tabular-nums"
+                        className="text-xl sm:text-2xl font-black tabular-nums"
                         style={{ color: active ? ACCENT : '#374151' }}
                       >
                         {g.cols} × {g.rows}
                       </p>
 
                       {/* 난이도 뱃지 */}
-                      <span className={`text-sm font-bold px-3 py-1 rounded-lg ${res.badgeClass}`}>
+                      <span className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-lg ${res.badgeClass}`}>
                         {res.badge}
                       </span>
 
-                      <p className="text-xs text-gray-400 text-center leading-snug">{res.desc}</p>
+                      <p className="hidden sm:block text-xs text-gray-400 text-center leading-snug">{res.desc}</p>
                     </button>
                   )
                 })}
@@ -206,20 +232,20 @@ export default function SetupPage({ onNext }) {
             </div>
 
             {/* CTA 버튼 */}
-            <div className="flex justify-center pb-2">
+            <div className="sticky bottom-0 -mx-6 flex justify-center bg-gradient-to-t from-gray-50 via-gray-50 to-gray-50/80 px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2">
               <button
                 onClick={() => onNext(grid)}
-                className="rounded-2xl text-xl font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
+                className="w-full sm:w-auto rounded-2xl text-lg sm:text-xl font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
                 style={{
-                  paddingTop: '1.25rem',
-                  paddingBottom: '1.25rem',
+                  paddingTop: '1rem',
+                  paddingBottom: '1rem',
                   paddingLeft: '5rem',
                   paddingRight: '5rem',
                   background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
                   boxShadow: '0 4px 24px rgba(16,185,129,0.40)',
                 }}
               >
-                그림 그리러 가기 →
+                {grid.cols} × {grid.rows} 그리기 →
               </button>
             </div>
 

@@ -46,8 +46,9 @@ export default function PixelCanvas({
       const container = containerRef.current
       const canvas = canvasRef.current
       if (!container || !canvas) return
-      const availW = container.clientWidth - 48
-      const availH = container.clientHeight - 48
+      const padding = container.clientWidth < 640 ? 24 : 48
+      const availW = container.clientWidth - padding
+      const availH = container.clientHeight - padding
       const base = Math.max(1, Math.min(
         Math.floor(availW / gridCols),
         Math.floor(availH / gridRows),
@@ -239,7 +240,7 @@ export default function PixelCanvas({
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex items-center justify-center overflow-auto p-6"
+      className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 sm:p-6"
       style={{ background: '#F3F4F6' }}
     >
       <div style={{ position: 'relative' }}>
