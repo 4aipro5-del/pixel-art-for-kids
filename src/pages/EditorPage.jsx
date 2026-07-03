@@ -36,7 +36,7 @@ function makeEmpty(rows, cols) {
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-2.5">
+    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
       {children}
     </p>
   )
@@ -80,8 +80,8 @@ function MobileEditorControls({
   tracingInputRef,
   onTracingUpload,
 }) {
-  const toolButtonClass = 'h-11 rounded-xl text-sm font-bold transition-all active:scale-95'
-  const actionButtonClass = 'h-10 rounded-xl px-3 text-xs font-bold text-gray-600 bg-gray-100 whitespace-nowrap active:scale-95'
+  const toolButtonClass = 'h-11 rounded-xl text-sm font-semibold transition-all active:scale-95'
+  const actionButtonClass = 'h-10 rounded-xl px-3 text-xs font-semibold text-gray-600 bg-gray-100 whitespace-nowrap active:scale-95'
 
   return (
     <div className="md:hidden flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
@@ -142,7 +142,7 @@ function MobileEditorControls({
               }}
             />
           ))}
-          <label className="h-9 px-3 rounded-xl bg-gray-100 text-xs font-bold text-gray-500 flex items-center flex-shrink-0">
+          <label className="h-9 px-3 rounded-xl bg-gray-100 text-xs font-semibold text-gray-500 flex items-center flex-shrink-0">
             직접
             <input
               type="color"
@@ -172,7 +172,7 @@ function MobileEditorControls({
 
         {tracingImage && (
           <div className="mt-2 flex items-center gap-2">
-            <span className="w-12 text-[11px] font-extrabold text-gray-400">밑그림</span>
+            <span className="w-12 text-xs font-semibold text-gray-400">밑그림</span>
             <input
               type="range"
               min={0}
@@ -184,7 +184,7 @@ function MobileEditorControls({
             />
             <button
               onClick={onTracingRemove}
-              className="h-8 rounded-lg px-2 text-[11px] font-bold text-red-400 bg-red-50"
+              className="h-8 rounded-lg px-2 text-xs font-semibold text-red-400 bg-red-50"
             >
               지우기
             </button>
@@ -192,7 +192,7 @@ function MobileEditorControls({
         )}
 
         <div className="mt-2 flex items-center gap-2">
-          <span className="w-12 text-[11px] font-extrabold text-gray-400">확대</span>
+          <span className="w-12 text-xs font-semibold text-gray-400">확대</span>
           <input
             type="range"
             min={0.25}
@@ -205,7 +205,7 @@ function MobileEditorControls({
           />
           <button
             onClick={onZoomReset}
-            className="h-8 min-w-12 rounded-lg px-2 text-[11px] font-bold text-emerald-600 bg-emerald-50"
+            className="h-8 min-w-12 rounded-lg px-2 text-xs font-semibold text-emerald-600 bg-emerald-50"
           >
             {Math.round(zoom * 100)}%
           </button>
@@ -558,7 +558,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               {/* Recent colors */}
               {recentColors.length > 0 && (
                 <div className="mb-2.5">
-                  <p className="text-[10px] text-gray-300 font-semibold mb-1.5">최근 사용</p>
+                  <p className="text-xs text-gray-300 font-semibold mb-1.5">최근 사용</p>
                   <div className="flex gap-1.5 flex-wrap">
                     {recentColors.map((color, i) => (
                       <button
@@ -613,8 +613,8 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               ) : (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-gray-400 font-semibold">투명도</span>
-                    <span className="text-[10px] font-bold" style={{ color: ACCENT }}>
+                    <span className="text-xs text-gray-400 font-semibold">투명도</span>
+                    <span className="text-xs font-bold" style={{ color: ACCENT }}>
                       {Math.round(tracingOpacity * 100)}%
                     </span>
                   </div>
@@ -645,7 +645,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               <div className="flex items-center justify-between mb-2.5">
                 <SectionLabel>확대 / 축소</SectionLabel>
                 <span
-                  className="text-[10px] font-bold mb-2.5"
+                  className="text-xs font-bold mb-2.5"
                   style={{ color: ACCENT }}
                 >
                   {Math.round(zoom * 100)}%
@@ -662,14 +662,14 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 style={{ accentColor: ACCENT }}
               />
               <div className="flex justify-between items-center mt-1.5">
-                <span className="text-[10px] text-gray-300">25%</span>
+                <span className="text-xs text-gray-300">25%</span>
                 <button
                   onClick={() => setZoom(1)}
-                  className="text-[10px] text-gray-400 hover:text-emerald-600 transition-colors font-semibold"
+                  className="text-xs text-gray-400 hover:text-emerald-600 transition-colors font-semibold"
                 >
                   초기화
                 </button>
-                <span className="text-[10px] text-gray-300">400%</span>
+                <span className="text-xs text-gray-300">400%</span>
               </div>
             </div>
 
@@ -751,7 +751,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             </div>
 
             <div className="text-center flex flex-col gap-2">
-              <p className="text-lg font-black text-gray-800">캔버스를 전체 지울까요?</p>
+              <p className="text-lg font-bold text-gray-800">캔버스를 전체 지울까요?</p>
               <p className="text-sm text-gray-500 leading-relaxed">
                 지금까지 그린 그림이 모두 사라져요.<br />
                 이 작업은 되돌릴 수 있어요.
@@ -761,14 +761,14 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowClearModal(false)}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-gray-600 transition-all hover:bg-gray-100 active:scale-[0.97]"
+                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-600 transition-all hover:bg-gray-100 active:scale-[0.97]"
                 style={{ background: '#F3F4F6' }}
               >
                 취소
               </button>
               <button
                 onClick={handleClearAll}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
+                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
                 style={{ background: 'linear-gradient(135deg, #F87171 0%, #FB923C 100%)', boxShadow: '0 4px 16px rgba(248,113,113,0.35)' }}
               >
                 전체 지우기
@@ -798,7 +798,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
             {/* 메시지 */}
             <div className="text-center flex flex-col gap-2">
-              <p className="text-lg font-black text-gray-800">크기 선택 화면으로 돌아갈까요?</p>
+              <p className="text-lg font-bold text-gray-800">크기 선택 화면으로 돌아갈까요?</p>
               <p className="text-sm text-gray-500 leading-relaxed">
                 캔버스 크기 선택 화면으로 돌아가요.<br />
                 다시 크기를 고르면 지금 그린 그림이<br />
@@ -810,14 +810,14 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowBackModal(false)}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-gray-600 transition-all hover:bg-gray-100 active:scale-[0.97]"
+                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-600 transition-all hover:bg-gray-100 active:scale-[0.97]"
                 style={{ background: '#F3F4F6' }}
               >
                 취소
               </button>
               <button
                 onClick={() => { setShowBackModal(false); onGoToSetup() }}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
+                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
                 style={{
                   background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
                   boxShadow: '0 4px 16px rgba(16,185,129,0.35)',

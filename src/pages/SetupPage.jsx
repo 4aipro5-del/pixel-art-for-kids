@@ -106,10 +106,7 @@ export default function SetupPage({ onNext }) {
 
             {/* Title */}
             <div className="text-center">
-              <h1
-                className="font-black text-gray-900 leading-tight mb-2 sm:mb-3"
-                style={{ fontSize: 'clamp(2.2rem, 6vw, 3.5rem)' }}
-              >
+              <h1 className="text-4xl sm:text-5xl font-black text-gray-900 leading-tight mb-2 sm:mb-3">
                 어떤 크기에 그릴까요?
               </h1>
               <p className="text-base sm:text-lg text-gray-500">화면 비율과 픽셀 해상도를 골라요</p>
@@ -128,13 +125,13 @@ export default function SetupPage({ onNext }) {
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-widest text-gray-400">선택한 캔버스</p>
-                  <p className="text-xl font-black text-gray-900">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
+                  <p className="text-xl font-bold text-gray-900">
                     {selectedRatio.label} · {grid.cols} × {grid.rows}
                   </p>
                 </div>
               </div>
-              <span className={`rounded-xl px-4 py-2 text-sm font-black ${selectedResolution.badgeClass}`}>
+              <span className={`rounded-xl px-4 py-2 text-sm font-bold ${selectedResolution.badgeClass}`}>
                 {selectedResolution.badge}
               </span>
             </div>
@@ -213,7 +210,7 @@ export default function SetupPage({ onNext }) {
 
                       {/* 격자 크기 */}
                       <p
-                        className="text-xl sm:text-2xl font-black tabular-nums"
+                        className="text-xl sm:text-2xl font-bold tabular-nums"
                         style={{ color: active ? ACCENT : '#374151' }}
                       >
                         {g.cols} × {g.rows}
