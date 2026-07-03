@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { getWallPosts } from '../firebase'
 
-const ACCENT = '#10B981'
+const ACCENT_YELLOW = '#f7d070'
+const PAGE_BG = '#1a1c1e'
+const PANEL_BG = '#111214'
 
 const RAINBOW = ['#F87171','#FB923C','#FCD34D','#4ADE80','#38BDF8','#6366F1','#C084FC']
 
@@ -27,15 +29,19 @@ export default function WallPage({ onBack }) {
   }, [])
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+    <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ background: PAGE_BG }}>
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="flex items-center gap-4 px-6 h-14 bg-white border-b border-gray-100 flex-shrink-0 z-10">
+      <header
+        className="flex items-center gap-4 px-6 h-14 flex-shrink-0 z-10"
+        style={{ background: PAGE_BG, borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+      >
 
         {/* 돌아가기 */}
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-bold transition-colors flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-bold transition-colors flex-shrink-0 hover:bg-[#f7d070]/10"
+          style={{ borderColor: ACCENT_YELLOW, color: ACCENT_YELLOW }}
         >
           ← 돌아가기
         </button>
@@ -47,14 +53,17 @@ export default function WallPage({ onBack }) {
               <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
             ))}
           </div>
-          <span className="text-sm font-black text-gray-900 tracking-tight">공유 담벼락</span>
+          <span className="text-sm font-black tracking-tight text-gray-100">오늘의그림 픽셀 담벼락</span>
         </div>
 
         {/* 작품 수 */}
         <div className="ml-auto flex items-center gap-2">
-          {!loading && !error && (
-            <span className="text-xs font-semibold text-gray-400">
-              {posts.length > 0 ? `${posts.length}개의 작품` : ''}
+          {!loading && !error && posts.length > 0 && (
+            <span
+              className="rounded-full border px-3 py-1 text-xs font-semibold"
+              style={{ borderColor: ACCENT_YELLOW, color: ACCENT_YELLOW }}
+            >
+              {posts.length}개의 작품
             </span>
           )}
         </div>
@@ -85,7 +94,12 @@ export default function WallPage({ onBack }) {
         {/* Error */}
         {error && (
           <div className="flex flex-col items-center justify-center h-full gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center text-3xl">😢</div>
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+              style={{ background: 'rgba(248,113,113,0.12)' }}
+            >
+              😢
+            </div>
             <p className="text-sm font-bold text-red-400">{error}</p>
           </div>
         )}
@@ -93,12 +107,14 @@ export default function WallPage({ onBack }) {
         {/* Empty */}
         {!loading && !error && posts.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl"
-              style={{ background: `${ACCENT}15` }}>
+            <div
+              className="w-20 h-20 rounded-2xl border-2 flex items-center justify-center text-4xl"
+              style={{ borderColor: ACCENT_YELLOW, background: PANEL_BG }}
+            >
               🖼️
             </div>
             <div className="text-center">
-              <p className="text-lg font-black text-gray-600">아직 올라온 그림이 없어요</p>
+              <p className="text-lg font-black text-gray-100">아직 올라온 그림이 없어요</p>
               <p className="text-sm text-gray-400 mt-1">첫 번째로 그림을 올려보세요!</p>
             </div>
           </div>
@@ -113,10 +129,11 @@ export default function WallPage({ onBack }) {
               {posts.map(post => (
                 <div
                   key={post.id}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+                  className="group rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.02]"
+                  style={{ background: PANEL_BG }}
                 >
                   {/* 이미지 */}
-                  <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                  <div className="aspect-square flex items-center justify-center overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <img
                       src={post.imageUrl}
                       alt={`${post.userName}의 픽셀아트`}
@@ -129,12 +146,12 @@ export default function WallPage({ onBack }) {
                   <div className="px-3.5 py-3">
                     <div className="flex items-center gap-2 mb-1">
                       <div
-                        className="w-6 h-6 rounded-lg flex-shrink-0 text-[10px] font-black text-white flex items-center justify-center"
-                        style={{ background: ACCENT }}
+                        className="w-6 h-6 rounded-lg flex-shrink-0 text-[10px] font-black text-black flex items-center justify-center"
+                        style={{ background: ACCENT_YELLOW }}
                       >
                         {post.userName?.[0]?.toUpperCase() || '?'}
                       </div>
-                      <p className="font-bold text-gray-700 text-sm truncate">{post.userName}</p>
+                      <p className="font-bold text-gray-100 text-sm truncate">{post.userName}</p>
                     </div>
                     <p className="text-xs text-gray-400 ml-8">{timeAgo(post.createdAt)}</p>
                   </div>
