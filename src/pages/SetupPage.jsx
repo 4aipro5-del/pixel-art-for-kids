@@ -1,6 +1,10 @@
 import { useState } from 'react'
 
-const ACCENT = '#10B981'
+const NEON_MINT = '#4deeea'
+const NEON_PINK = '#ff2d95'
+const NEON_LAVENDER = '#b98eff'
+const CARD_BG = '#262e35'
+const CARD_BORDER = '#3a434b'
 
 const RATIOS = [
   {
@@ -8,56 +12,30 @@ const RATIOS = [
     label: '정사각형',
     sublabel: '가로 세로가 같아요',
     pw: 60, ph: 60,
+    neon: NEON_MINT,
   },
   {
     id: '9:16',
     label: '스마트폰',
     sublabel: '세로가 긴 화면이에요',
     pw: 34, ph: 60,
+    neon: NEON_PINK,
   },
   {
     id: 'a4',
     label: '문서 A4',
     sublabel: '종이처럼 긴 비율이에요',
     pw: 43, ph: 60,
+    neon: NEON_LAVENDER,
   },
 ]
 
 const RESOLUTIONS = [
-  {
-    id: 16,
-    badge: '쉬움',
-    badgeClass: 'bg-emerald-50 text-emerald-600',
-    desc: '큼직한 픽셀로 편하게',
-    dotCount: 3,
-    dotSize: 14,
-  },
-  {
-    id: 24,
-    badge: '보통',
-    badgeClass: 'bg-amber-50 text-amber-600',
-    desc: '딱 알맞은 크기예요',
-    dotCount: 4,
-    dotSize: 10,
-  },
-  {
-    id: 32,
-    badge: '고급',
-    badgeClass: 'bg-blue-50 text-blue-600',
-    desc: '더 세밀하게 그려봐요',
-    dotCount: 5,
-    dotSize: 7,
-  },
-  {
-    id: 64,
-    badge: '전문가',
-    badgeClass: 'bg-rose-50 text-rose-500',
-    desc: '섬세하게 표현 가능해요',
-    dotCount: 6,
-    dotSize: 5,
-  },
+  { id: 16, badge: '쉬움',   desc: '큼직한 픽셀로 편하게',     dotCount: 3, dotSize: 14, neon: NEON_MINT },
+  { id: 24, badge: '보통',   desc: '딱 알맞은 크기예요',       dotCount: 4, dotSize: 10, neon: NEON_LAVENDER },
+  { id: 32, badge: '고급',   desc: '더 세밀하게 그려봐요',     dotCount: 5, dotSize: 7,  neon: NEON_PINK },
+  { id: 64, badge: '전문가', desc: '섬세하게 표현 가능해요',   dotCount: 6, dotSize: 5,  neon: NEON_MINT },
 ]
-
 
 function getGrid(ratio, res) {
   if (ratio === '1:1')  return { cols: res, rows: res }
@@ -66,7 +44,7 @@ function getGrid(ratio, res) {
 }
 
 // 해상도 카드 안의 미니 픽셀 그리드 미리보기
-function MiniGrid({ count, size, active }) {
+function MiniGrid({ count, size, active, neon }) {
   return (
     <div
       className="grid gap-0.5"
@@ -80,8 +58,8 @@ function MiniGrid({ count, size, active }) {
             width: size,
             height: size,
             background: active
-              ? (i % 5 === 0 || i % 7 === 0 ? ACCENT : `${ACCENT}30`)
-              : (i % 5 === 0 || i % 7 === 0 ? '#D1D5DB' : '#F3F4F6'),
+              ? (i % 5 === 0 || i % 7 === 0 ? neon : `${neon}40`)
+              : (i % 5 === 0 || i % 7 === 0 ? '#4b5560' : '#333c44'),
           }}
         />
       ))}
@@ -97,7 +75,7 @@ export default function SetupPage({ onNext }) {
   const selectedResolution = RESOLUTIONS.find(res => res.id === resolution)
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-gray-50">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#1e252b]">
 
       {/* Scrollable main area */}
       <div className="relative z-10 h-full overflow-y-auto">
@@ -106,39 +84,49 @@ export default function SetupPage({ onNext }) {
 
             {/* Title */}
             <div className="text-center">
-              <h1 className="text-4xl sm:text-5xl font-black text-gray-900 leading-tight mb-2 sm:mb-3">
-                어떤 크기에 그릴까요?
+              <h1 className="font-pixel text-4xl sm:text-5xl leading-tight mb-4 sm:mb-6">
+                <span className="block text-[#e2e8f0]">어떤 크기에</span>
+                <span className="block" style={{ color: NEON_LAVENDER, textShadow: `0 0 16px ${NEON_LAVENDER}55` }}>그릴까요?</span>
               </h1>
-              <p className="text-base sm:text-lg text-gray-500">화면 비율과 픽셀 해상도를 골라요</p>
+              <p className="text-base sm:text-lg text-[#94a3b8]">화면 비율과 픽셀 해상도를 골라요</p>
             </div>
 
-            <div className="hidden sm:flex items-center justify-between rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+            <div
+              className="hidden sm:flex items-center justify-between rounded-sm border px-5 py-4"
+              style={{ borderColor: CARD_BORDER, background: CARD_BG }}
+            >
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
+                <div
+                  className="flex h-14 w-14 items-center justify-center rounded-sm border"
+                  style={{ borderColor: selectedRatio.neon, background: '#1a2025' }}
+                >
                   <div
-                    className="rounded"
+                    className="rounded-sm"
                     style={{
                       width: selectedRatio.pw * 0.55,
                       height: selectedRatio.ph * 0.55,
-                      background: ACCENT,
+                      background: selectedRatio.neon,
                     }}
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">선택한 캔버스</p>
+                  <p className="font-pixel text-lg text-[#e2e8f0]">
                     {selectedRatio.label} · {grid.cols} × {grid.rows}
                   </p>
                 </div>
               </div>
-              <span className={`rounded-xl px-4 py-2 text-sm font-bold ${selectedResolution.badgeClass}`}>
+              <span
+                className="font-pixel rounded-sm border px-4 py-2 text-sm"
+                style={{ borderColor: selectedResolution.neon, color: selectedResolution.neon, background: '#1a2025' }}
+              >
                 {selectedResolution.badge}
               </span>
             </div>
 
             {/* ── 비율 선택 ────────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+              <p className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest mb-3 sm:mb-4">
                 화면 비율
               </p>
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -148,34 +136,32 @@ export default function SetupPage({ onNext }) {
                     <button
                       key={r.id}
                       onClick={() => setRatio(r.id)}
-                      className="flex flex-col items-center gap-2 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-xl sm:rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex flex-col items-center gap-2 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-sm border-2 transition-all active:scale-[0.98]"
                       style={{
-                        borderColor: active ? ACCENT : '#E5E7EB',
-                        background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
-                        boxShadow: active
-                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(16,185,129,0.18)`
-                          : '0 2px 8px rgba(0,0,0,0.04)',
+                        borderColor: active ? r.neon : CARD_BORDER,
+                        background: active ? `${r.neon}1a` : CARD_BG,
+                        boxShadow: active ? `0 0 16px ${r.neon}55` : 'none',
                       }}
                     >
                       {/* 비율 시각화 */}
                       <div className="flex items-end justify-center h-11 sm:h-16">
                         <div
-                          className="rounded transition-all"
+                          className="rounded-sm transition-all"
                           style={{
                             width: `clamp(${Math.round(r.pw * 0.62)}px, 10vw, ${r.pw}px)`,
                             height: `clamp(${Math.round(r.ph * 0.62)}px, 10vw, ${r.ph}px)`,
-                            background: active ? ACCENT : '#D1D5DB',
+                            background: active ? r.neon : '#4b5560',
                           }}
                         />
                       </div>
                       <div className="text-center">
                         <p
-                          className="text-base sm:text-xl font-bold"
-                          style={{ color: active ? ACCENT : '#374151' }}
+                          className="font-pixel text-base sm:text-lg"
+                          style={{ color: active ? r.neon : '#e2e8f0' }}
                         >
                           {r.label}
                         </p>
-                        <p className="hidden sm:block text-xs text-gray-400 mt-1 leading-snug">{r.sublabel}</p>
+                        <p className="hidden sm:block text-xs text-[#94a3b8] mt-1 leading-snug">{r.sublabel}</p>
                       </div>
                     </button>
                   )
@@ -185,7 +171,7 @@ export default function SetupPage({ onNext }) {
 
             {/* ── 해상도 선택 ──────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+              <p className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest mb-3 sm:mb-4">
                 픽셀 해상도
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -196,32 +182,33 @@ export default function SetupPage({ onNext }) {
                     <button
                       key={res.id}
                       onClick={() => setResolution(res.id)}
-                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-3 sm:px-4 rounded-sm border-2 transition-all active:scale-[0.98]"
                       style={{
-                        borderColor: active ? ACCENT : '#E5E7EB',
-                        background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
-                        boxShadow: active
-                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(16,185,129,0.18)`
-                          : '0 2px 8px rgba(0,0,0,0.04)',
+                        borderColor: active ? res.neon : CARD_BORDER,
+                        background: active ? `${res.neon}1a` : CARD_BG,
+                        boxShadow: active ? `0 0 16px ${res.neon}55` : 'none',
                       }}
                     >
                       {/* 미니 픽셀 그리드 */}
-                      <MiniGrid count={res.dotCount} size={res.dotSize} active={active} />
+                      <MiniGrid count={res.dotCount} size={res.dotSize} active={active} neon={res.neon} />
 
                       {/* 격자 크기 */}
                       <p
-                        className="text-xl sm:text-2xl font-bold tabular-nums"
-                        style={{ color: active ? ACCENT : '#374151' }}
+                        className="font-pixel text-lg sm:text-xl tabular-nums"
+                        style={{ color: active ? res.neon : '#e2e8f0' }}
                       >
                         {g.cols} × {g.rows}
                       </p>
 
                       {/* 난이도 뱃지 */}
-                      <span className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-lg ${res.badgeClass}`}>
+                      <span
+                        className="font-pixel text-[10px] sm:text-xs px-3 py-1 rounded-sm border"
+                        style={{ borderColor: res.neon, color: res.neon }}
+                      >
                         {res.badge}
                       </span>
 
-                      <p className="hidden sm:block text-xs text-gray-400 text-center leading-snug">{res.desc}</p>
+                      <p className="hidden sm:block text-xs text-[#94a3b8] text-center leading-snug">{res.desc}</p>
                     </button>
                   )
                 })}
@@ -229,18 +216,14 @@ export default function SetupPage({ onNext }) {
             </div>
 
             {/* CTA 버튼 */}
-            <div className="sticky bottom-0 -mx-6 flex justify-center bg-gradient-to-t from-gray-50 via-gray-50 to-gray-50/80 px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2">
+            <div
+              className="sticky bottom-0 -mx-6 flex justify-center px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2"
+              style={{ background: 'linear-gradient(to top, #1e252b, #1e252b, rgba(30,37,43,0.8))' }}
+            >
               <button
                 onClick={() => onNext(grid)}
-                className="w-full sm:w-auto rounded-2xl text-lg sm:text-xl font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
-                style={{
-                  paddingTop: '1rem',
-                  paddingBottom: '1rem',
-                  paddingLeft: '5rem',
-                  paddingRight: '5rem',
-                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
-                  boxShadow: '0 4px 24px rgba(16,185,129,0.40)',
-                }}
+                className="font-pixel w-full sm:w-auto py-4 px-20 rounded-sm text-lg sm:text-xl text-black bg-[#4deeea] transition-all hover:brightness-110 active:scale-[0.97]"
+                style={{ boxShadow: '4px 4px 0 #000000' }}
               >
                 {grid.cols} × {grid.rows} 그리기 →
               </button>

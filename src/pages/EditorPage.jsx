@@ -6,7 +6,11 @@ import { uploadWallPost, saveArtwork } from '../firebase'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixelart_sketchbook'
-const ACCENT = '#10B981'
+const NEON_MINT = '#4deeea'
+const NEON_PINK = '#ff2d95'
+const CARD_BG = '#262e35'
+const CARD_BORDER = '#3a434b'
+const PAGE_BG = '#1e252b'
 
 // 무지개 + 기본 12색 팔레트
 const PASTEL_COLORS = [
@@ -36,22 +40,21 @@ function makeEmpty(rows, cols) {
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
+    <p className="text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-2.5">
       {children}
     </p>
   )
 }
 
 function HeaderBtn({ onClick, disabled, children, variant = 'ghost', className = '' }) {
-  const base = 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
+  const base = 'font-pixel flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-sm border text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
   const styles = {
-    ghost:   'text-gray-600 hover:bg-gray-100',
-    danger:  'text-gray-500 hover:bg-red-50 hover:text-red-500',
-    primary: 'text-white',
+    ghost:   'bg-[#262e35] text-[#e2e8f0] border-[#3a434b] hover:border-[#4deeea] hover:text-[#4deeea]',
+    danger:  'bg-[#262e35] text-[#e2e8f0] border-[#3a434b] hover:border-[#ff2d95] hover:text-[#ff2d95]',
+    primary: 'bg-[#4deeea] text-black border-transparent hover:brightness-110',
   }
   return (
-    <button onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]} ${className}`}
-      style={variant === 'primary' ? { background: ACCENT } : undefined}>
+    <button onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]} ${className}`}>
       {children}
     </button>
   )
@@ -80,11 +83,11 @@ function MobileEditorControls({
   tracingInputRef,
   onTracingUpload,
 }) {
-  const toolButtonClass = 'h-11 rounded-xl text-sm font-semibold transition-all active:scale-95'
-  const actionButtonClass = 'h-10 rounded-xl px-3 text-xs font-semibold text-gray-600 bg-gray-100 whitespace-nowrap active:scale-95'
+  const toolButtonClass = 'font-pixel h-11 rounded-sm border text-xs transition-colors active:scale-95'
+  const actionButtonClass = 'font-pixel h-10 rounded-sm border px-3 text-[10px] whitespace-nowrap active:scale-95 transition-colors'
 
   return (
-    <div className="md:hidden flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+    <div className="md:hidden flex-shrink-0" style={{ background: PAGE_BG, borderTop: `1px solid ${CARD_BORDER}` }}>
       <div
         className="px-3 pt-2 pb-3"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
@@ -97,8 +100,12 @@ function MobileEditorControls({
                 <button
                   key={t.id}
                   onClick={() => t.id === 'eyedropper' ? onEyedropper() : onToolChange(t.id)}
-                  className={`${toolButtonClass} ${active ? 'text-emerald-600 shadow-sm' : 'text-gray-500 bg-gray-100'}`}
-                  style={active ? { background: `${ACCENT}18` } : undefined}
+                  className={toolButtonClass}
+                  style={{
+                    borderColor: active ? NEON_MINT : CARD_BORDER,
+                    background: active ? `${NEON_MINT}1f` : CARD_BG,
+                    color: active ? NEON_MINT : '#e2e8f0',
+                  }}
                 >
                   {t.label}
                 </button>
@@ -114,8 +121,12 @@ function MobileEditorControls({
               <button
                 key={b.id}
                 onClick={() => onBrushSizeChange(b.id)}
-                className={`${toolButtonClass} text-xs ${brushSize === b.id ? 'text-emerald-600 shadow-sm' : 'text-gray-500 bg-gray-100'}`}
-                style={brushSize === b.id ? { background: `${ACCENT}18` } : undefined}
+                className={toolButtonClass}
+                style={{
+                  borderColor: brushSize === b.id ? NEON_MINT : CARD_BORDER,
+                  background: brushSize === b.id ? `${NEON_MINT}1f` : CARD_BG,
+                  color: brushSize === b.id ? NEON_MINT : '#e2e8f0',
+                }}
               >
                 {b.label}
               </button>
@@ -125,24 +136,27 @@ function MobileEditorControls({
 
         <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
           <div
-            className="w-10 h-10 rounded-xl border border-black/10 flex-shrink-0"
-            style={{ background: selectedColor }}
+            className="w-10 h-10 rounded-sm border flex-shrink-0"
+            style={{ background: selectedColor, borderColor: '#ffffff40' }}
           />
           {[...PASTEL_COLORS, ...recentColors].filter((color, index, all) => all.indexOf(color) === index).map(color => (
             <button
               key={color}
               onClick={() => onColorChange(color)}
               aria-label={`${color} 색상 선택`}
-              className="w-9 h-9 rounded-xl flex-shrink-0 active:scale-95"
+              className="w-9 h-9 rounded-sm border flex-shrink-0 active:scale-95"
               style={{
                 background: color,
-                boxShadow: '0 0 0 1px rgba(0,0,0,0.08)',
-                outline: selectedColor === color ? `2.5px solid ${ACCENT}` : 'none',
+                borderColor: '#ffffff40',
+                outline: selectedColor === color ? `3px solid ${NEON_MINT}` : 'none',
                 outlineOffset: '2px',
               }}
             />
           ))}
-          <label className="h-9 px-3 rounded-xl bg-gray-100 text-xs font-semibold text-gray-500 flex items-center flex-shrink-0">
+          <label
+            className="font-pixel h-9 px-3 rounded-sm border text-[10px] flex items-center flex-shrink-0"
+            style={{ borderColor: CARD_BORDER, background: CARD_BG, color: '#e2e8f0' }}
+          >
             직접
             <input
               type="color"
@@ -154,11 +168,11 @@ function MobileEditorControls({
         </div>
 
         <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
-          <button onClick={onClearAll} className={`${actionButtonClass} hover:bg-red-50 hover:text-red-500`}>전체 지우기</button>
-          <button onClick={onSavePNG} className={actionButtonClass}>PNG 저장</button>
-          <button onClick={onSaveSketchbook} className={actionButtonClass}>스케치북</button>
-          <button onClick={onOpenDoan} className={actionButtonClass}>도안 만들기</button>
-          <label className={`${actionButtonClass} flex items-center`}>
+          <button onClick={onClearAll} className={actionButtonClass} style={{ borderColor: CARD_BORDER, background: CARD_BG, color: NEON_PINK }}>전체 지우기</button>
+          <button onClick={onSavePNG} className={actionButtonClass} style={{ borderColor: CARD_BORDER, background: CARD_BG, color: '#e2e8f0' }}>PNG 저장</button>
+          <button onClick={onSaveSketchbook} className={actionButtonClass} style={{ borderColor: CARD_BORDER, background: CARD_BG, color: '#e2e8f0' }}>스케치북</button>
+          <button onClick={onOpenDoan} className={actionButtonClass} style={{ borderColor: CARD_BORDER, background: CARD_BG, color: '#e2e8f0' }}>도안 만들기</button>
+          <label className={`${actionButtonClass} flex items-center`} style={{ borderColor: CARD_BORDER, background: CARD_BG, color: '#e2e8f0' }}>
             밑그림
             <input
               ref={tracingInputRef}
@@ -172,7 +186,7 @@ function MobileEditorControls({
 
         {tracingImage && (
           <div className="mt-2 flex items-center gap-2">
-            <span className="w-12 text-xs font-semibold text-gray-400">밑그림</span>
+            <span className="w-12 text-xs font-semibold text-[#94a3b8]">밑그림</span>
             <input
               type="range"
               min={0}
@@ -180,11 +194,12 @@ function MobileEditorControls({
               value={Math.round(tracingOpacity * 100)}
               onChange={e => onTracingOpacityChange(Number(e.target.value) / 100)}
               className="flex-1 cursor-pointer"
-              style={{ accentColor: ACCENT }}
+              style={{ accentColor: NEON_MINT }}
             />
             <button
               onClick={onTracingRemove}
-              className="h-8 rounded-lg px-2 text-xs font-semibold text-red-400 bg-red-50"
+              className="font-pixel h-8 rounded-sm border px-2 text-[10px]"
+              style={{ borderColor: CARD_BORDER, background: CARD_BG, color: NEON_PINK }}
             >
               지우기
             </button>
@@ -192,7 +207,7 @@ function MobileEditorControls({
         )}
 
         <div className="mt-2 flex items-center gap-2">
-          <span className="w-12 text-xs font-semibold text-gray-400">확대</span>
+          <span className="w-12 text-xs font-semibold text-[#94a3b8]">확대</span>
           <input
             type="range"
             min={0.25}
@@ -201,11 +216,12 @@ function MobileEditorControls({
             value={zoom}
             onChange={e => onZoomChange(Number(e.target.value))}
             className="flex-1 cursor-pointer"
-            style={{ accentColor: ACCENT }}
+            style={{ accentColor: NEON_MINT }}
           />
           <button
             onClick={onZoomReset}
-            className="h-8 min-w-12 rounded-lg px-2 text-xs font-semibold text-emerald-600 bg-emerald-50"
+            className="font-pixel h-8 min-w-12 rounded-sm border px-2 text-[10px]"
+            style={{ borderColor: NEON_MINT, background: CARD_BG, color: NEON_MINT }}
           >
             {Math.round(zoom * 100)}%
           </button>
@@ -409,10 +425,13 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const canRedo = future.length > 0
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: PAGE_BG }}>
 
       {/* ── Header ─────────────────────────────────── */}
-      <header className="flex-shrink-0 z-10 h-14 md:h-12 bg-white border-b border-gray-100 overflow-hidden md:overflow-x-auto header-scrollbar">
+      <header
+        className="flex-shrink-0 z-10 h-14 md:h-12 overflow-hidden md:overflow-x-auto header-scrollbar"
+        style={{ background: PAGE_BG, borderBottom: `1px solid ${CARD_BORDER}` }}
+      >
         <div className="flex items-center justify-between gap-2 px-3 md:px-5 h-full min-w-0 md:min-w-max">
 
           {/* Brand + 이전 단계 */}
@@ -422,10 +441,10 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
               ))}
             </div>
-            <span className="text-base font-black text-gray-900 tracking-tight whitespace-nowrap">픽셀아트</span>
-            <div className="hidden sm:block w-px h-4 bg-gray-200 shrink-0" />
-            <span className="hidden sm:inline text-sm text-gray-400 font-medium whitespace-nowrap">{userName}</span>
-            <div className="hidden md:block w-px h-4 bg-gray-200 shrink-0" />
+            <span className="font-pixel text-lg tracking-tight whitespace-nowrap" style={{ color: NEON_PINK }}>픽셀아트</span>
+            <div className="hidden sm:block w-px h-4 shrink-0" style={{ background: CARD_BORDER }} />
+            <span className="hidden sm:inline text-sm text-[#94a3b8] font-medium whitespace-nowrap">{userName}</span>
+            <div className="hidden md:block w-px h-4 shrink-0" style={{ background: CARD_BORDER }} />
             <HeaderBtn onClick={() => setShowBackModal(true)}>
               <span className="hidden sm:inline">← 이전 단계</span>
               <span className="sm:hidden">←</span>
@@ -433,7 +452,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
           </div>
 
           {/* Edit controls */}
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <HeaderBtn onClick={handleUndo} disabled={!canUndo}>
               <span className="hidden sm:inline">↩ 되돌리기</span>
               <span className="sm:hidden">↩</span>
@@ -442,7 +461,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               <span className="hidden sm:inline">↪ 다시하기</span>
               <span className="sm:hidden">↪</span>
             </HeaderBtn>
-            <div className="hidden md:block w-px h-4 bg-gray-200 mx-1.5 shrink-0" />
+            <div className="hidden md:block w-px h-4 mx-1.5 shrink-0" style={{ background: CARD_BORDER }} />
             <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" className="hidden md:flex">✕ 전체 지우기</HeaderBtn>
           </div>
 
@@ -470,71 +489,80 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
         ) : (<>
 
         {/* ── Left Sidebar ───────────────────────── */}
-        <aside className="hidden md:flex w-60 bg-gray-50 border-r border-gray-200 flex-col flex-shrink-0 overflow-y-auto">
+        <aside
+          className="hidden md:flex w-60 flex-col flex-shrink-0 overflow-y-auto"
+          style={{ background: PAGE_BG, borderRight: `1px solid ${CARD_BORDER}` }}
+        >
           <div className="flex flex-col gap-4 p-4 flex-1">
 
             {/* Tools */}
-            <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+            <div className="rounded-sm p-3 border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
               <SectionLabel>도구</SectionLabel>
               <div className="flex flex-col gap-0.5">
-                {TOOLS.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => t.id === 'eyedropper' ? handleEyedrop(tool) : setTool(t.id)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-                      tool === t.id
-                        ? 'text-emerald-600 font-semibold shadow-sm'
-                        : 'text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-sm font-medium'
-                    }`}
-                    style={tool === t.id ? { background: `${ACCENT}18` } : undefined}
-                  >
-                    {t.label}
-                  </button>
-                ))}
+                {TOOLS.map(t => {
+                  const active = tool === t.id
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => t.id === 'eyedropper' ? handleEyedrop(tool) : setTool(t.id)}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-sm text-sm transition-colors duration-200"
+                      style={{
+                        background: active ? `${NEON_MINT}1f` : 'transparent',
+                        color: active ? NEON_MINT : '#e2e8f0',
+                        fontWeight: active ? 600 : 500,
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             {/* Brush size */}
-            <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+            <div className="rounded-sm p-3 border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
               <SectionLabel>브러시 크기</SectionLabel>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: 1, label: '1칸',  cells: 1 },
                   { id: 2, label: '4칸',  cells: 4 },
-                ].map(b => (
-                  <button
-                    key={b.id}
-                    onClick={() => setBrushSize(b.id)}
-                    className={`flex flex-col items-center gap-2 py-3 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                      brushSize === b.id
-                        ? 'text-emerald-600 shadow-sm'
-                        : 'bg-white text-gray-500 hover:shadow-sm hover:text-gray-700'
-                    }`}
-                    style={brushSize === b.id ? { background: `${ACCENT}18` } : undefined}
-                  >
-                    <div className={`grid gap-0.5 ${b.id === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                      {Array(b.cells).fill(0).map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-3 h-3 rounded-sm"
-                          style={{ background: brushSize === b.id ? ACCENT : '#D1D5DB' }}
-                        />
-                      ))}
-                    </div>
-                    <span>{b.label}</span>
-                  </button>
-                ))}
+                ].map(b => {
+                  const active = brushSize === b.id
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => setBrushSize(b.id)}
+                      className="flex flex-col items-center gap-2 py-3 rounded-sm border text-xs font-semibold transition-colors duration-200"
+                      style={{
+                        borderColor: active ? NEON_MINT : CARD_BORDER,
+                        background: active ? `${NEON_MINT}1f` : 'transparent',
+                        color: active ? NEON_MINT : '#e2e8f0',
+                      }}
+                    >
+                      <div className={`grid gap-0.5 ${b.id === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        {Array(b.cells).fill(0).map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-3 h-3 rounded-sm"
+                            style={{ background: active ? NEON_MINT : '#4b5560' }}
+                          />
+                        ))}
+                      </div>
+                      <span>{b.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             {/* Color palette */}
-            <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+            <div className="rounded-sm p-3 border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
               <SectionLabel>색상</SectionLabel>
 
               {/* Active color preview */}
               <div
-                className="w-full h-9 rounded-xl mb-3 border border-black/5"
-                style={{ background: selectedColor, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
+                className="w-full h-9 rounded-sm mb-3 border"
+                style={{ background: selectedColor, borderColor: '#ffffff30' }}
               />
 
               {/* Palette grid */}
@@ -544,11 +572,11 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                     key={color}
                     onClick={() => setSelectedColor(color)}
                     aria-label={`${color} 색상 선택`}
-                    className="aspect-square rounded-xl transition-transform hover:scale-110 active:scale-95"
+                    className="aspect-square rounded-sm border transition-transform hover:scale-110 active:scale-95"
                     style={{
                       background: color,
-                      boxShadow: '0 0 0 1px rgba(0,0,0,0.07)',
-                      outline: selectedColor === color ? `2.5px solid ${ACCENT}` : 'none',
+                      borderColor: '#ffffff30',
+                      outline: selectedColor === color ? `3px solid ${NEON_MINT}` : 'none',
                       outlineOffset: '2px',
                     }}
                   />
@@ -558,18 +586,18 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               {/* Recent colors */}
               {recentColors.length > 0 && (
                 <div className="mb-2.5">
-                  <p className="text-xs text-gray-300 font-semibold mb-1.5">최근 사용</p>
+                  <p className="text-xs text-[#6b7684] font-semibold mb-1.5">최근 사용</p>
                   <div className="flex gap-1.5 flex-wrap">
                     {recentColors.map((color, i) => (
                       <button
                         key={i}
                         onClick={() => setSelectedColor(color)}
                         aria-label={`${color} 최근 색상 선택`}
-                        className="w-7 h-7 rounded-lg transition-transform hover:scale-110 active:scale-95"
+                        className="w-7 h-7 rounded-sm border transition-transform hover:scale-110 active:scale-95"
                         style={{
                           background: color,
-                          boxShadow: '0 0 0 1px rgba(0,0,0,0.07)',
-                          outline: selectedColor === color ? `2.5px solid ${ACCENT}` : 'none',
+                          borderColor: '#ffffff30',
+                          outline: selectedColor === color ? `3px solid ${NEON_MINT}` : 'none',
                           outlineOffset: '2px',
                         }}
                       />
@@ -580,12 +608,15 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
               {/* Custom color picker */}
               <div className="relative">
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-gray-100 hover:shadow-sm cursor-pointer transition-all duration-200">
+                <div
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-sm border cursor-pointer transition-colors duration-200"
+                  style={{ background: '#1a2025', borderColor: CARD_BORDER }}
+                >
                   <div
-                    className="w-3.5 h-3.5 rounded border border-dashed border-gray-300 flex-shrink-0"
-                    style={{ background: selectedColor }}
+                    className="w-3.5 h-3.5 rounded-sm border border-dashed flex-shrink-0"
+                    style={{ background: selectedColor, borderColor: '#ffffff50' }}
                   />
-                  <span className="text-xs text-gray-500 font-medium">직접 선택…</span>
+                  <span className="text-xs text-[#94a3b8] font-medium">직접 선택…</span>
                 </div>
                 <input
                   type="color"
@@ -597,11 +628,14 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             </div>
 
             {/* 밑그림 (트레이싱) */}
-            <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+            <div className="rounded-sm p-3 border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
               <SectionLabel>밑그림</SectionLabel>
               {!tracingImage ? (
-                <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-gray-100 hover:shadow-sm cursor-pointer transition-all duration-200">
-                  <span className="text-xs text-gray-500 font-medium">PNG 이미지 올리기…</span>
+                <label
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-sm border cursor-pointer transition-colors duration-200"
+                  style={{ background: '#1a2025', borderColor: CARD_BORDER }}
+                >
+                  <span className="text-xs text-[#94a3b8] font-medium">PNG 이미지 올리기…</span>
                   <input
                     ref={tracingInputRef}
                     type="file"
@@ -613,8 +647,8 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               ) : (
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400 font-semibold">투명도</span>
-                    <span className="text-xs font-bold" style={{ color: ACCENT }}>
+                    <span className="text-xs text-[#94a3b8] font-semibold">투명도</span>
+                    <span className="text-xs font-bold" style={{ color: NEON_MINT }}>
                       {Math.round(tracingOpacity * 100)}%
                     </span>
                   </div>
@@ -625,11 +659,12 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                     value={Math.round(tracingOpacity * 100)}
                     onChange={e => setTracingOpacity(Number(e.target.value) / 100)}
                     className="w-full cursor-pointer"
-                    style={{ accentColor: ACCENT }}
+                    style={{ accentColor: NEON_MINT }}
                   />
                   <button
                     onClick={() => setTracingImage(null)}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:bg-red-50 transition-colors"
+                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-sm border text-xs font-semibold transition-colors"
+                    style={{ borderColor: CARD_BORDER, color: NEON_PINK }}
                   >
                     ✕ 밑그림 지우기
                   </button>
@@ -641,13 +676,10 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <div className="flex-1" />
 
             {/* Zoom */}
-            <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+            <div className="rounded-sm p-3 border" style={{ background: CARD_BG, borderColor: CARD_BORDER }}>
               <div className="flex items-center justify-between mb-2.5">
                 <SectionLabel>확대 / 축소</SectionLabel>
-                <span
-                  className="text-xs font-bold mb-2.5"
-                  style={{ color: ACCENT }}
-                >
+                <span className="text-xs font-bold mb-2.5" style={{ color: NEON_MINT }}>
                   {Math.round(zoom * 100)}%
                 </span>
               </div>
@@ -659,17 +691,18 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 value={zoom}
                 onChange={e => setZoom(Number(e.target.value))}
                 className="w-full cursor-pointer"
-                style={{ accentColor: ACCENT }}
+                style={{ accentColor: NEON_MINT }}
               />
               <div className="flex justify-between items-center mt-1.5">
-                <span className="text-xs text-gray-300">25%</span>
+                <span className="text-xs text-[#6b7684]">25%</span>
                 <button
                   onClick={() => setZoom(1)}
-                  className="text-xs text-gray-400 hover:text-emerald-600 transition-colors font-semibold"
+                  className="text-xs font-semibold hover:underline transition-colors"
+                  style={{ color: '#94a3b8' }}
                 >
                   초기화
                 </button>
-                <span className="text-xs text-gray-300">400%</span>
+                <span className="text-xs text-[#6b7684]">400%</span>
               </div>
             </div>
 
@@ -722,7 +755,10 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-xl z-50 whitespace-nowrap backdrop-blur-sm">
+        <div
+          className="font-pixel fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-sm text-xs z-50 whitespace-nowrap border"
+          style={{ background: CARD_BG, borderColor: NEON_MINT, color: NEON_MINT }}
+        >
           {toast}
         </div>
       )}
@@ -735,24 +771,24 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
       {showClearModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowClearModal(false)}
         >
           <div
-            className="bg-white rounded-3xl px-8 py-8 flex flex-col items-center gap-6 mx-4"
-            style={{ maxWidth: 360, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            className="rounded-sm border px-8 py-8 flex flex-col items-center gap-6 mx-4"
+            style={{ maxWidth: 360, width: '100%', background: CARD_BG, borderColor: CARD_BORDER }}
             onClick={e => e.stopPropagation()}
           >
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-              style={{ background: '#FEE2E2' }}
+              className="w-16 h-16 rounded-sm border flex items-center justify-center text-3xl"
+              style={{ background: '#1a2025', borderColor: NEON_PINK }}
             >
               🗑️
             </div>
 
             <div className="text-center flex flex-col gap-2">
-              <p className="text-lg font-bold text-gray-800">캔버스를 전체 지울까요?</p>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="font-pixel text-base" style={{ color: NEON_PINK }}>캔버스를 전체 지울까요?</p>
+              <p className="text-sm text-[#94a3b8] leading-relaxed">
                 지금까지 그린 그림이 모두 사라져요.<br />
                 이 작업은 되돌릴 수 있어요.
               </p>
@@ -761,15 +797,15 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowClearModal(false)}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-600 transition-all hover:bg-gray-100 active:scale-[0.97]"
-                style={{ background: '#F3F4F6' }}
+                className="flex-1 py-3 rounded-sm border text-sm font-semibold transition-colors active:scale-[0.97]"
+                style={{ borderColor: CARD_BORDER, background: 'transparent', color: '#e2e8f0' }}
               >
                 취소
               </button>
               <button
                 onClick={handleClearAll}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
-                style={{ background: 'linear-gradient(135deg, #F87171 0%, #FB923C 100%)', boxShadow: '0 4px 16px rgba(248,113,113,0.35)' }}
+                className="flex-1 py-3 rounded-sm border text-sm font-semibold transition-colors active:scale-[0.97]"
+                style={{ borderColor: NEON_PINK, background: NEON_PINK, color: '#000000' }}
               >
                 전체 지우기
               </button>
@@ -782,24 +818,24 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
       {showBackModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
         >
           <div
-            className="bg-white rounded-3xl px-8 py-8 flex flex-col items-center gap-6 mx-4"
-            style={{ maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}
+            className="rounded-sm border px-8 py-8 flex flex-col items-center gap-6 mx-4"
+            style={{ maxWidth: 380, width: '100%', background: CARD_BG, borderColor: CARD_BORDER }}
           >
             {/* 아이콘 */}
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-              style={{ background: `${ACCENT}15` }}
+              className="w-16 h-16 rounded-sm border flex items-center justify-center text-3xl"
+              style={{ background: '#1a2025', borderColor: NEON_MINT }}
             >
               🖌️
             </div>
 
             {/* 메시지 */}
             <div className="text-center flex flex-col gap-2">
-              <p className="text-lg font-bold text-gray-800">크기 선택 화면으로 돌아갈까요?</p>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="font-pixel text-base" style={{ color: NEON_MINT }}>크기 선택 화면으로 돌아갈까요?</p>
+              <p className="text-sm text-[#94a3b8] leading-relaxed">
                 캔버스 크기 선택 화면으로 돌아가요.<br />
                 다시 크기를 고르면 지금 그린 그림이<br />
                 사라질 수 있어요. 정말 돌아갈까요?
@@ -810,18 +846,15 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowBackModal(false)}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-600 transition-all hover:bg-gray-100 active:scale-[0.97]"
-                style={{ background: '#F3F4F6' }}
+                className="flex-1 py-3 rounded-sm border text-sm font-semibold transition-colors active:scale-[0.97]"
+                style={{ borderColor: CARD_BORDER, background: 'transparent', color: '#e2e8f0' }}
               >
                 취소
               </button>
               <button
                 onClick={() => { setShowBackModal(false); onGoToSetup() }}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
-                style={{
-                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
-                  boxShadow: '0 4px 16px rgba(16,185,129,0.35)',
-                }}
+                className="flex-1 py-3 rounded-sm border text-sm font-semibold transition-colors active:scale-[0.97]"
+                style={{ borderColor: NEON_MINT, background: NEON_MINT, color: '#000000' }}
               >
                 확인
               </button>
