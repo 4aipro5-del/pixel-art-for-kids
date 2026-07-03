@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import PixelCanvas from '../components/PixelCanvas'
 import SketchbookModal from '../components/SketchbookModal'
 import DoanView from '../components/DoanView'
@@ -28,10 +29,17 @@ const PASTEL_COLORS = [
 ]
 
 const TOOLS = [
-  { id: 'pen',        icon: '✏️', title: '펜' },
-  { id: 'eraser',     icon: '🧽', title: '지우개' },
-  { id: 'eyedropper', icon: '💧', title: '스포이드' },
+  { id: 'pen',        iconSrc: '/images/draw.png',       title: '펜' },
+  { id: 'eraser',     iconSrc: '/images/eraser.png',     title: '지우개' },
+  { id: 'eyedropper', iconSrc: '/images/eyedropper.png', title: '스포이드' },
 ]
+
+function ToolIcon({ tool, active, className = '' }) {
+  if (tool.iconSrc) {
+    return <img src={tool.iconSrc} alt={tool.title} className={`${className} ${active ? '' : 'invert'}`} />
+  }
+  return <span className={className}>{tool.icon}</span>
+}
 
 function makeEmpty(rows, cols) {
   return Array(rows).fill(null).map(() => Array(cols).fill(null))
@@ -45,7 +53,7 @@ function SectionLabel({ children }) {
   )
 }
 
-function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', iconOnly = true, className = '' }) {
+function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', iconOnly = true, className = 'inline-flex' }) {
   const base = 'font-pixel flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
   const shape = iconOnly ? 'w-10 h-10 rounded-full text-lg' : 'gap-2 px-5 py-2.5 rounded-full text-sm'
   const styles = {
@@ -53,10 +61,39 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
     danger:  'bg-[#111214] text-white hover:text-red-400',
     primary: 'bg-[#f7d070] text-black font-bold hover:brightness-105',
   }
+  const btnRef = useRef(null)
+  const [tooltipPos, setTooltipPos] = useState(null)
+
+  const showTooltip = () => {
+    if (!title || !btnRef.current) return
+    const rect = btnRef.current.getBoundingClientRect()
+    setTooltipPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 })
+  }
+  const hideTooltip = () => setTooltipPos(null)
+
   return (
-    <button onClick={onClick} disabled={disabled} title={title} className={`${base} ${shape} ${styles[variant]} ${className}`}>
-      {children}
-    </button>
+    <div className={className}>
+      <button
+        ref={btnRef}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={title}
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        className={`${base} ${shape} ${styles[variant]}`}
+      >
+        {children}
+      </button>
+      {tooltipPos && createPortal(
+        <span
+          className="font-pixel pointer-events-none fixed z-[999] -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-[10px] text-white"
+          style={{ top: tooltipPos.top, left: tooltipPos.left, background: '#000000' }}
+        >
+          {title}
+        </span>,
+        document.body
+      )}
+    </div>
   )
 }
 
@@ -81,7 +118,7 @@ function MobileEditorControls({
   tracingInputRef,
   onTracingUpload,
 }) {
-  const toolButtonClass = 'font-pixel h-11 rounded-full text-xs transition-colors active:scale-95'
+  const toolButtonClass = 'font-pixel h-11 rounded-full text-xs transition-colors active:scale-95 flex items-center justify-center'
   const actionButtonClass = 'font-pixel h-10 rounded-full px-3 text-[10px] whitespace-nowrap active:scale-95 transition-colors'
 
   return (
@@ -104,7 +141,7 @@ function MobileEditorControls({
                   color: active ? '#000000' : '#e2e8f0',
                 }}
               >
-                {t.icon}
+                <ToolIcon tool={t} active={active} className="w-6 h-6" />
               </button>
             )
           })}
@@ -226,6 +263,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const toastTimer = useRef(null)
   const prevToolRef = useRef('pen')  // eyedrop 취소 시 이전 도구 복원용
   const tracingInputRef = useRef(null)
+  const headerTracingInputRef = useRef(null)
 
   const handleTracingUpload = (e) => {
     const file = e.target.files[0]
@@ -417,16 +455,34 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
           {/* Edit controls */}
           <div className="flex items-center gap-2 shrink-0">
-            <HeaderBtn onClick={handleUndo} disabled={!canUndo} title="되돌리기">↩</HeaderBtn>
-            <HeaderBtn onClick={handleRedo} disabled={!canRedo} title="다시하기">↪</HeaderBtn>
+            <HeaderBtn onClick={handleUndo} disabled={!canUndo} title="되돌리기">
+              <img src="/images/undo.png" alt="되돌리기" className="w-5 h-5 invert scale-x-[-1]" />
+            </HeaderBtn>
+            <HeaderBtn onClick={handleRedo} disabled={!canRedo} title="다시하기">
+              <img src="/images/undo.png" alt="다시하기" className="w-5 h-5 invert" />
+            </HeaderBtn>
             <div className="hidden md:block w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
             <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" title="전체 지우기" className="hidden md:flex">🗑️</HeaderBtn>
           </div>
 
           {/* Save actions */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
-            <HeaderBtn onClick={handleSavePNG} title="PNG 저장">⬇️</HeaderBtn>
-            <HeaderBtn onClick={handleSaveSketchbook} title="스케치북">📔</HeaderBtn>
+            <HeaderBtn onClick={handleSaveSketchbook} title="나의 스케치북">
+              <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
+            </HeaderBtn>
+            <HeaderBtn onClick={() => headerTracingInputRef.current?.click()} title="밑그림 불러오기">
+              🖼️
+            </HeaderBtn>
+            <input
+              ref={headerTracingInputRef}
+              type="file"
+              accept="image/png"
+              className="hidden"
+              onChange={handleTracingUpload}
+            />
+            <HeaderBtn onClick={handleSavePNG} title="PNG 저장">
+              <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
+            </HeaderBtn>
             <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">🖨️</HeaderBtn>
             <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" iconOnly={false} title="갤러리에 올리기">
               {uploading ? '올리는 중…' : '↗ 갤러리 올리기'}
@@ -469,7 +525,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                         background: active ? ACCENT_YELLOW : 'transparent',
                       }}
                     >
-                      {t.icon}
+                      <ToolIcon tool={t} active={active} className="w-6 h-6" />
                     </button>
                   )
                 })}
