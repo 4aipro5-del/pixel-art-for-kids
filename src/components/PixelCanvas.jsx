@@ -241,7 +241,7 @@ export default function PixelCanvas({
     <div
       ref={containerRef}
       className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 sm:p-6"
-      style={{ background: '#1e252b' }}
+      style={{ background: '#1a1c1e' }}
     >
       <div style={{ position: 'relative' }}>
         {tracingImage && (
