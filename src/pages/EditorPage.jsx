@@ -28,9 +28,9 @@ const PASTEL_COLORS = [
 ]
 
 const TOOLS = [
-  { id: 'pen',        label: '펜' },
-  { id: 'eraser',     label: '지우개' },
-  { id: 'eyedropper', label: '스포이드' },
+  { id: 'pen',        icon: '✏️', title: '펜' },
+  { id: 'eraser',     icon: '🧽', title: '지우개' },
+  { id: 'eyedropper', icon: '💧', title: '스포이드' },
 ]
 
 function makeEmpty(rows, cols) {
@@ -45,15 +45,16 @@ function SectionLabel({ children }) {
   )
 }
 
-function HeaderBtn({ onClick, disabled, children, variant = 'ghost', className = '' }) {
-  const base = 'font-pixel flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
+function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', iconOnly = true, className = '' }) {
+  const base = 'font-pixel flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
+  const shape = iconOnly ? 'w-10 h-10 rounded-full text-lg' : 'gap-2 px-5 py-2.5 rounded-full text-sm'
   const styles = {
     ghost:   'bg-[#111214] text-white hover:brightness-125',
     danger:  'bg-[#111214] text-white hover:text-red-400',
-    primary: 'bg-[#f7d070] text-black hover:brightness-105',
+    primary: 'bg-[#f7d070] text-black font-bold hover:brightness-105',
   }
   return (
-    <button onClick={onClick} disabled={disabled} className={`${base} ${styles[variant]} ${className}`}>
+    <button onClick={onClick} disabled={disabled} title={title} className={`${base} ${shape} ${styles[variant]} ${className}`}>
       {children}
     </button>
   )
@@ -63,8 +64,6 @@ function MobileEditorControls({
   tool,
   onToolChange,
   onEyedropper,
-  brushSize,
-  onBrushSizeChange,
   selectedColor,
   onColorChange,
   recentColors,
@@ -91,44 +90,24 @@ function MobileEditorControls({
         className="px-3 pt-2 pb-3"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
-        <div className="flex items-center gap-2">
-          <div className="grid grid-cols-3 gap-1.5 flex-1">
-            {TOOLS.map(t => {
-              const active = tool === t.id
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => t.id === 'eyedropper' ? onEyedropper() : onToolChange(t.id)}
-                  className={toolButtonClass}
-                  style={{
-                    background: active ? ACCENT_YELLOW : PANEL_BG,
-                    color: active ? '#000000' : '#e2e8f0',
-                  }}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5 w-24">
-            {[
-              { id: 1, label: '1칸' },
-              { id: 2, label: '4칸' },
-            ].map(b => (
+        <div className="grid grid-cols-3 gap-1.5">
+          {TOOLS.map(t => {
+            const active = tool === t.id
+            return (
               <button
-                key={b.id}
-                onClick={() => onBrushSizeChange(b.id)}
-                className={toolButtonClass}
+                key={t.id}
+                onClick={() => t.id === 'eyedropper' ? onEyedropper() : onToolChange(t.id)}
+                title={t.title}
+                className={`${toolButtonClass} text-lg`}
                 style={{
-                  background: brushSize === b.id ? ACCENT_YELLOW : PANEL_BG,
-                  color: brushSize === b.id ? '#000000' : '#e2e8f0',
+                  background: active ? ACCENT_YELLOW : PANEL_BG,
+                  color: active ? '#000000' : '#e2e8f0',
                 }}
               >
-                {b.label}
+                {t.icon}
               </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
 
         <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
@@ -235,7 +214,6 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const [selectedColor, setSelectedColor] = useState(PASTEL_COLORS[0])
   const [recentColors, setRecentColors] = useState([])
   const [tool, setTool] = useState('pen')
-  const [brushSize, setBrushSize] = useState(1)
   const [zoom, setZoom] = useState(1)
   const [showSketchbook, setShowSketchbook] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -426,54 +404,37 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
       {/* ── Header ─────────────────────────────────── */}
       <header
-        className="flex-shrink-0 z-10 h-14 md:h-12 overflow-hidden md:overflow-x-auto header-scrollbar"
+        className="flex-shrink-0 z-10 h-16 overflow-hidden md:overflow-x-auto header-scrollbar"
         style={{ background: PAGE_BG, borderBottom: '1px solid rgba(255,255,255,0.08)' }}
       >
-        <div className="flex items-center justify-between gap-2 px-3 md:px-5 h-full min-w-0 md:min-w-max">
+        <div className="flex items-center justify-between gap-3 px-4 md:px-6 h-full min-w-0 md:min-w-max">
 
           {/* Brand + 이전 단계 */}
-          <div className="flex items-center gap-2 md:gap-2.5 min-w-0">
-            <div className="flex gap-1">
-              {PASTEL_COLORS.slice(0, 4).map((c, i) => (
-                <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
-              ))}
-            </div>
-            <span className="font-pixel text-lg tracking-tight whitespace-nowrap" style={{ color: ACCENT_YELLOW }}>픽셀아트</span>
-            <div className="hidden sm:block w-px h-4 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <span className="hidden sm:inline text-sm text-gray-400 font-medium whitespace-nowrap">{userName}</span>
-            <div className="hidden md:block w-px h-4 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <HeaderBtn onClick={() => setShowBackModal(true)}>
-              <span className="hidden sm:inline">← 이전 단계</span>
-              <span className="sm:hidden">←</span>
-            </HeaderBtn>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="font-pixel text-xl tracking-tight whitespace-nowrap" style={{ color: ACCENT_YELLOW }}>PIXEL ART</span>
+            <HeaderBtn onClick={() => setShowBackModal(true)} title="이전 단계">←</HeaderBtn>
           </div>
 
           {/* Edit controls */}
-          <div className="flex items-center gap-1 shrink-0">
-            <HeaderBtn onClick={handleUndo} disabled={!canUndo}>
-              <span className="hidden sm:inline">↩ 되돌리기</span>
-              <span className="sm:hidden">↩</span>
-            </HeaderBtn>
-            <HeaderBtn onClick={handleRedo} disabled={!canRedo}>
-              <span className="hidden sm:inline">↪ 다시하기</span>
-              <span className="sm:hidden">↪</span>
-            </HeaderBtn>
-            <div className="hidden md:block w-px h-4 mx-1.5 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" className="hidden md:flex">✕ 전체 지우기</HeaderBtn>
+          <div className="flex items-center gap-2 shrink-0">
+            <HeaderBtn onClick={handleUndo} disabled={!canUndo} title="되돌리기">↩</HeaderBtn>
+            <HeaderBtn onClick={handleRedo} disabled={!canRedo} title="다시하기">↪</HeaderBtn>
+            <div className="hidden md:block w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" title="전체 지우기" className="hidden md:flex">🗑️</HeaderBtn>
           </div>
 
           {/* Save actions */}
-          <div className="hidden md:flex items-center gap-1.5 shrink-0">
-            <HeaderBtn onClick={handleSavePNG}>↓ PNG 저장</HeaderBtn>
-            <HeaderBtn onClick={handleSaveSketchbook}>◉ 스케치북</HeaderBtn>
-            <HeaderBtn onClick={handleOpenDoan}>◈ 도안 만들기</HeaderBtn>
-            <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary">
-              {uploading ? '올리는 중…' : '↗ 담벼락 공유'}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
+            <HeaderBtn onClick={handleSavePNG} title="PNG 저장">⬇️</HeaderBtn>
+            <HeaderBtn onClick={handleSaveSketchbook} title="스케치북">📔</HeaderBtn>
+            <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">🖨️</HeaderBtn>
+            <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" iconOnly={false} title="갤러리에 올리기">
+              {uploading ? '올리는 중…' : '↗ 갤러리 올리기'}
             </HeaderBtn>
           </div>
 
-          <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" className="md:hidden">
-            {uploading ? '중…' : '공유'}
+          <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" iconOnly={false} title="갤러리에 올리기" className="md:hidden">
+            {uploading ? '중…' : '↗ 올리기'}
           </HeaderBtn>
 
         </div>
@@ -495,56 +456,20 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             {/* Tools */}
             <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
               <SectionLabel>도구</SectionLabel>
-              <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-3 gap-1.5">
                 {TOOLS.map(t => {
                   const active = tool === t.id
                   return (
                     <button
                       key={t.id}
                       onClick={() => t.id === 'eyedropper' ? handleEyedrop(tool) : setTool(t.id)}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-full text-sm transition-colors duration-200"
+                      title={t.title}
+                      className="flex items-center justify-center py-2.5 rounded-full text-lg transition-colors duration-200"
                       style={{
                         background: active ? ACCENT_YELLOW : 'transparent',
-                        color: active ? '#000000' : '#e2e8f0',
-                        fontWeight: active ? 700 : 500,
                       }}
                     >
-                      {t.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Brush size */}
-            <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
-              <SectionLabel>브러시 크기</SectionLabel>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 1, label: '1칸',  cells: 1 },
-                  { id: 2, label: '4칸',  cells: 4 },
-                ].map(b => {
-                  const active = brushSize === b.id
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => setBrushSize(b.id)}
-                      className="flex flex-col items-center gap-2 py-3 rounded-2xl text-xs font-semibold transition-colors duration-200"
-                      style={{
-                        background: active ? ACCENT_YELLOW : 'rgba(255,255,255,0.04)',
-                        color: active ? '#000000' : '#e2e8f0',
-                      }}
-                    >
-                      <div className={`grid gap-0.5 ${b.id === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                        {Array(b.cells).fill(0).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-3 h-3 rounded-sm"
-                            style={{ background: active ? '#000000' : '#4b5560' }}
-                          />
-                        ))}
-                      </div>
-                      <span>{b.label}</span>
+                      {t.icon}
                     </button>
                   )
                 })}
@@ -713,7 +638,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             gridRows={gridRows}
             selectedColor={selectedColor}
             tool={tool}
-            brushSize={brushSize}
+            brushSize={1}
             zoom={zoom}
             onCommit={handleCommit}
             onColorPick={handleColorPick}
@@ -726,8 +651,6 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             tool={tool}
             onToolChange={setTool}
             onEyedropper={() => handleEyedrop(tool)}
-            brushSize={brushSize}
-            onBrushSizeChange={setBrushSize}
             selectedColor={selectedColor}
             onColorChange={setSelectedColor}
             recentColors={recentColors}
