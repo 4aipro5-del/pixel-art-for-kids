@@ -46,9 +46,8 @@ export default function PixelCanvas({
       const container = containerRef.current
       const canvas = canvasRef.current
       if (!container || !canvas) return
-      const padding = container.clientWidth < 640 ? 24 : 48
-      const availW = container.clientWidth - padding
-      const availH = container.clientHeight - padding
+      const availW = container.clientWidth
+      const availH = container.clientHeight
       const base = Math.max(1, Math.min(
         Math.floor(availW / gridCols),
         Math.floor(availH / gridRows),
@@ -240,10 +239,10 @@ export default function PixelCanvas({
   return (
     <div
       ref={containerRef}
-      className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 sm:p-6"
+      className="w-full h-full flex overflow-auto"
       style={{ background: '#1a1c1e' }}
     >
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', margin: 'auto' }}>
         {tracingImage && (
           <img
             src={tracingImage}

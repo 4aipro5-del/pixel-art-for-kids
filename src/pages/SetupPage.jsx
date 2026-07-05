@@ -1,26 +1,46 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const ACCENT_YELLOW = '#f7d070'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
 
 const RATIOS = [
-  { id: '1:1',  label: '정사각형', sublabel: '가로 세로가 같아요',   pw: 60, ph: 60 },
-  { id: '9:16', label: '스마트폰', sublabel: '세로가 긴 화면이에요', pw: 34, ph: 60 },
-  { id: 'a4',   label: '문서 A4',  sublabel: '종이처럼 긴 비율이에요', pw: 43, ph: 60 },
+  { id: 'square', label: '정사각형', sublabel: '가로 세로가 같아요',     hasOrientation: false },
+  { id: 'tablet', label: '태블릿',   sublabel: '화면 비율 4:3',          hasOrientation: true, defaultOrientation: 'landscape' },
+  { id: 'a4',     label: 'A4 출력',  sublabel: '종이처럼 긴 비율이에요', hasOrientation: true, defaultOrientation: 'portrait' },
 ]
 
-const RESOLUTIONS = [
-  { id: 16, badge: '쉬움',   desc: '큼직한 픽셀로 편하게',   dotCount: 3, dotSize: 14 },
-  { id: 24, badge: '보통',   desc: '딱 알맞은 크기예요',     dotCount: 4, dotSize: 10 },
-  { id: 32, badge: '고급',   desc: '더 세밀하게 그려봐요',   dotCount: 5, dotSize: 7  },
-  { id: 64, badge: '전문가', desc: '섬세하게 표현 가능해요', dotCount: 6, dotSize: 5  },
+// 각 비율의 "기준 방향" 해상도 [쉬움, 보통, 어려움]. 반대 방향은 cols/rows를 서로 바꿔 계산한다.
+// 정사각형: 방향 없음(고정) · 태블릿: 기준 = 가로 · A4: 기준 = 세로
+const BASE_GRIDS = {
+  square: [{ cols: 24, rows: 24 }, { cols: 32, rows: 32 }, { cols: 64, rows: 64 }],
+  tablet: [{ cols: 28, rows: 21 }, { cols: 36, rows: 27 }, { cols: 48, rows: 36 }],
+  a4:     [{ cols: 20, rows: 28 }, { cols: 30, rows: 42 }, { cols: 45, rows: 63 }],
+}
+
+const LEVELS = [
+  { badge: '쉬움',   desc: '큼직한 픽셀로 편하게',   dotCount: 3, dotSize: 14 },
+  { badge: '보통',   desc: '딱 알맞은 크기예요',     dotCount: 4, dotSize: 10 },
+  { badge: '어려움', desc: '섬세하게 표현 가능해요', dotCount: 5, dotSize: 7 },
 ]
 
-function getGrid(ratio, res) {
-  if (ratio === '1:1')  return { cols: res, rows: res }
-  if (ratio === '9:16') return { cols: Math.round(res * 9 / 16), rows: res }
-  return { cols: res, rows: Math.round(res * Math.SQRT2) }
+function isBaseOrientation(ratioId, orientation) {
+  return (ratioId === 'tablet' && orientation === 'landscape')
+      || (ratioId === 'a4' && orientation === 'portrait')
+      || ratioId === 'square'
+}
+
+function getGrid(ratioId, orientation, levelIndex) {
+  const base = BASE_GRIDS[ratioId][levelIndex]
+  if (isBaseOrientation(ratioId, orientation)) return base
+  return { cols: base.rows, rows: base.cols } // 방향 전환 시 X/Y를 서로 바꾼다
+}
+
+// 비율 카드 미리보기 박스 크기(정사각형 60x60 기준 박스 안에 맞춘 비율)
+function getPreviewBox(ratioId, orientation) {
+  const boxes = { square: { w: 60, h: 60 }, tablet: { w: 60, h: 45 }, a4: { w: 43, h: 60 } }
+  const box = boxes[ratioId]
+  return isBaseOrientation(ratioId, orientation) ? box : { w: box.h, h: box.w }
 }
 
 // 해상도 카드 안의 미니 픽셀 그리드 미리보기
@@ -48,11 +68,18 @@ function MiniGrid({ count, size, active }) {
 }
 
 export default function SetupPage({ onNext }) {
-  const [ratio, setRatio] = useState('1:1')
-  const [resolution, setResolution] = useState(16)
-  const grid = getGrid(ratio, resolution)
+  const [ratio, setRatio] = useState('square')
+  const [orientation, setOrientation] = useState('landscape')
+  const [levelIndex, setLevelIndex] = useState(0)
+
   const selectedRatio = RATIOS.find(r => r.id === ratio)
-  const selectedResolution = RESOLUTIONS.find(res => res.id === resolution)
+  const grid = getGrid(ratio, orientation, levelIndex)
+  const selectedLevel = LEVELS[levelIndex]
+
+  // 비율을 바꾸면 그 비율의 기본 방향으로 리셋
+  useEffect(() => {
+    if (selectedRatio.hasOrientation) setOrientation(selectedRatio.defaultOrientation)
+  }, [ratio]) // eslint-disable-line
 
   return (
     <div className="relative h-screen w-screen overflow-hidden" style={{ background: PAGE_BG }}>
@@ -83,8 +110,8 @@ export default function SetupPage({ onNext }) {
                   <div
                     className="rounded-sm"
                     style={{
-                      width: selectedRatio.pw * 0.55,
-                      height: selectedRatio.ph * 0.55,
+                      width: getPreviewBox(ratio, orientation).w * 0.55,
+                      height: getPreviewBox(ratio, orientation).h * 0.55,
                       background: ACCENT_YELLOW,
                     }}
                   />
@@ -100,7 +127,7 @@ export default function SetupPage({ onNext }) {
                 className="font-pixel rounded-full px-4 py-2 text-sm text-black"
                 style={{ background: ACCENT_YELLOW }}
               >
-                {selectedResolution.badge}
+                {selectedLevel.badge}
               </span>
             </div>
 
@@ -112,6 +139,7 @@ export default function SetupPage({ onNext }) {
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {RATIOS.map(r => {
                   const active = ratio === r.id
+                  const box = getPreviewBox(r.id, active ? orientation : r.defaultOrientation)
                   return (
                     <button
                       key={r.id}
@@ -124,8 +152,8 @@ export default function SetupPage({ onNext }) {
                         <div
                           className="rounded-sm transition-all"
                           style={{
-                            width: `clamp(${Math.round(r.pw * 0.62)}px, 10vw, ${r.pw}px)`,
-                            height: `clamp(${Math.round(r.ph * 0.62)}px, 10vw, ${r.ph}px)`,
+                            width: `clamp(${Math.round(box.w * 0.62)}px, 10vw, ${box.w}px)`,
+                            height: `clamp(${Math.round(box.h * 0.62)}px, 10vw, ${box.h}px)`,
                             background: active ? '#000000' : '#4b5560',
                           }}
                         />
@@ -147,24 +175,54 @@ export default function SetupPage({ onNext }) {
               </div>
             </div>
 
+            {/* ── 화면 방향 선택 (정사각형 제외) ───────────────────── */}
+            {selectedRatio.hasOrientation && (
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+                  화면 방향
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  {[
+                    { id: 'landscape', label: '가로 방향' },
+                    { id: 'portrait',  label: '세로 방향' },
+                  ].map(o => {
+                    const active = orientation === o.id
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => setOrientation(o.id)}
+                        className="font-pixel py-3 sm:py-4 rounded-2xl text-sm sm:text-base transition-all active:scale-[0.98]"
+                        style={{
+                          background: active ? ACCENT_YELLOW : PANEL_BG,
+                          color: active ? '#000000' : '#e2e8f0',
+                        }}
+                      >
+                        {o.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* ── 해상도 선택 ──────────────────────────────────── */}
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 픽셀 해상도
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                {RESOLUTIONS.map(res => {
-                  const g = getGrid(ratio, res.id)
-                  const active = resolution === res.id
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                {LEVELS.map((lv, i) => {
+                  const g = getGrid(ratio, orientation, i)
+                  const active = levelIndex === i
                   return (
                     <button
-                      key={res.id}
-                      onClick={() => setResolution(res.id)}
+                      key={lv.badge}
+                      onClick={() => setLevelIndex(i)}
                       className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-3 sm:px-4 rounded-2xl transition-all active:scale-[0.98]"
                       style={{ background: active ? ACCENT_YELLOW : PANEL_BG }}
                     >
                       {/* 미니 픽셀 그리드 */}
-                      <MiniGrid count={res.dotCount} size={res.dotSize} active={active} />
+                      <MiniGrid count={lv.dotCount} size={lv.dotSize} active={active} />
 
                       {/* 격자 크기 */}
                       <p className="font-pixel text-lg sm:text-xl tabular-nums" style={{ color: active ? '#000000' : '#e2e8f0' }}>
@@ -180,14 +238,14 @@ export default function SetupPage({ onNext }) {
                           border: active ? 'none' : `1px solid ${ACCENT_YELLOW}`,
                         }}
                       >
-                        {res.badge}
+                        {lv.badge}
                       </span>
 
                       <p
                         className="hidden sm:block text-xs text-center leading-snug"
                         style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
                       >
-                        {res.desc}
+                        {lv.desc}
                       </p>
                     </button>
                   )

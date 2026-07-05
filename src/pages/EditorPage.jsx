@@ -98,153 +98,6 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
   )
 }
 
-function MobileEditorControls({
-  tool,
-  onToolChange,
-  onEyedropper,
-  selectedColor,
-  onColorChange,
-  recentColors,
-  zoom,
-  onZoomChange,
-  onZoomReset,
-  onClearAll,
-  onSavePNG,
-  onSaveSketchbook,
-  onOpenDoan,
-  tracingImage,
-  tracingOpacity,
-  onTracingOpacityChange,
-  onTracingRemove,
-  tracingInputRef,
-  onTracingUpload,
-}) {
-  const toolButtonClass = 'font-pixel h-11 rounded-full text-xs transition-colors active:scale-95 flex items-center justify-center'
-  const actionButtonClass = 'font-pixel h-10 rounded-full px-3 text-[10px] whitespace-nowrap active:scale-95 transition-colors'
-
-  return (
-    <div className="md:hidden flex-shrink-0" style={{ background: PAGE_BG, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-      <div
-        className="px-3 pt-2 pb-3"
-        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-      >
-        <div className="grid grid-cols-3 gap-1.5">
-          {TOOLS.map(t => {
-            const active = tool === t.id
-            return (
-              <button
-                key={t.id}
-                onClick={() => t.id === 'eyedropper' ? onEyedropper() : onToolChange(t.id)}
-                title={t.title}
-                className={`${toolButtonClass} text-lg`}
-                style={{
-                  background: active ? ACCENT_YELLOW : PANEL_BG,
-                  color: active ? '#000000' : '#e2e8f0',
-                }}
-              >
-                <ToolIcon tool={t} active={active} className="w-6 h-6" />
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
-          <div
-            className="w-10 h-10 rounded-xl border flex-shrink-0"
-            style={{ background: selectedColor, borderColor: 'rgba(255,255,255,0.25)' }}
-          />
-          {[...PASTEL_COLORS, ...recentColors].filter((color, index, all) => all.indexOf(color) === index).map(color => (
-            <button
-              key={color}
-              onClick={() => onColorChange(color)}
-              aria-label={`${color} 색상 선택`}
-              className="w-9 h-9 rounded-xl border flex-shrink-0 active:scale-95"
-              style={{
-                background: color,
-                borderColor: 'rgba(255,255,255,0.25)',
-                outline: selectedColor === color ? `3px solid ${ACCENT_YELLOW}` : 'none',
-                outlineOffset: '2px',
-              }}
-            />
-          ))}
-          <label
-            className="font-pixel h-9 px-3 rounded-full text-[10px] flex items-center flex-shrink-0"
-            style={{ background: PANEL_BG, color: '#e2e8f0' }}
-          >
-            직접
-            <input
-              type="color"
-              value={selectedColor === '#FFFFFF' ? '#FFFFFF' : selectedColor}
-              onChange={e => onColorChange(e.target.value)}
-              className="sr-only"
-            />
-          </label>
-        </div>
-
-        <div className="mt-2 flex items-center gap-2 overflow-x-auto header-scrollbar pb-1">
-          <button onClick={onClearAll} className={actionButtonClass} style={{ background: PANEL_BG, color: DANGER }}>전체 지우기</button>
-          <button onClick={onSavePNG} className={actionButtonClass} style={{ background: PANEL_BG, color: '#e2e8f0' }}>PNG 저장</button>
-          <button onClick={onSaveSketchbook} className={actionButtonClass} style={{ background: PANEL_BG, color: '#e2e8f0' }}>스케치북</button>
-          <button onClick={onOpenDoan} className={actionButtonClass} style={{ background: PANEL_BG, color: '#e2e8f0' }}>도안 만들기</button>
-          <label className={`${actionButtonClass} flex items-center`} style={{ background: PANEL_BG, color: '#e2e8f0' }}>
-            밑그림
-            <input
-              ref={tracingInputRef}
-              type="file"
-              accept="image/png"
-              className="hidden"
-              onChange={onTracingUpload}
-            />
-          </label>
-        </div>
-
-        {tracingImage && (
-          <div className="mt-2 flex items-center gap-2">
-            <span className="w-12 text-xs font-semibold text-gray-400">밑그림</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(tracingOpacity * 100)}
-              onChange={e => onTracingOpacityChange(Number(e.target.value) / 100)}
-              className="flex-1 cursor-pointer"
-              style={{ accentColor: ACCENT_YELLOW }}
-            />
-            <button
-              onClick={onTracingRemove}
-              className="font-pixel h-8 rounded-full px-2 text-[10px]"
-              style={{ background: PANEL_BG, color: DANGER }}
-            >
-              지우기
-            </button>
-          </div>
-        )}
-
-        <div className="mt-2 flex items-center gap-2">
-          <span className="w-12 text-xs font-semibold text-gray-400">확대</span>
-          <input
-            type="range"
-            min={0.25}
-            max={4}
-            step={0.25}
-            value={zoom}
-            onChange={e => onZoomChange(Number(e.target.value))}
-            className="flex-1 cursor-pointer"
-            style={{ accentColor: ACCENT_YELLOW }}
-          />
-          <button
-            onClick={onZoomReset}
-            className="font-pixel h-8 min-w-12 rounded-full px-2 text-[10px]"
-            style={{ background: PANEL_BG, color: ACCENT_YELLOW }}
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, onGoToSetup }) {
   const [pixels, setPixels] = useState(() => makeEmpty(gridRows, gridCols))
   const [history, setHistory] = useState([])
@@ -263,7 +116,6 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const [tracingOpacity, setTracingOpacity] = useState(0.25)
   const toastTimer = useRef(null)
   const prevToolRef = useRef('pen')  // eyedrop 취소 시 이전 도구 복원용
-  const tracingInputRef = useRef(null)
   const headerTracingInputRef = useRef(null)
 
   const handleTracingUpload = (e) => {
@@ -428,7 +280,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
       if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoRef.current() }
       if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redoRef.current() }
       if (e.key === 's') { e.preventDefault(); savePNGRef.current() }
-      if (e.key === '=') { e.preventDefault(); setZoom(z => Math.min(4, +(z + 0.25).toFixed(2))) }
+      if (e.key === '=') { e.preventDefault(); setZoom(z => Math.min(2, +(z + 0.25).toFixed(2))) }
       if (e.key === '-') { e.preventDefault(); setZoom(z => Math.max(0.25, +(z - 0.25).toFixed(2))) }
     }
     window.addEventListener('keydown', onKey)
@@ -443,10 +295,10 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
       {/* ── Header ─────────────────────────────────── */}
       <header
-        className="flex-shrink-0 z-10 h-16 overflow-hidden md:overflow-x-auto header-scrollbar"
+        className="flex-shrink-0 z-10 h-16 overflow-x-auto header-scrollbar"
         style={{ background: PAGE_BG, borderBottom: '1px solid rgba(255,255,255,0.08)' }}
       >
-        <div className="flex items-center justify-between gap-3 px-4 md:px-6 h-full min-w-0 md:min-w-max">
+        <div className="flex items-center justify-between gap-3 px-6 h-full min-w-max">
 
           {/* Brand + 이전 단계 */}
           <div className="flex items-center gap-3 min-w-0">
@@ -462,12 +314,12 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <HeaderBtn onClick={handleRedo} disabled={!canRedo} title="다시하기">
               <img src="/images/undo.png" alt="다시하기" className="w-5 h-5 invert" />
             </HeaderBtn>
-            <div className="hidden md:block w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" title="전체 지우기" className="hidden md:flex">🗑️</HeaderBtn>
+            <div className="w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" title="전체 지우기">🗑️</HeaderBtn>
           </div>
 
           {/* Save actions */}
-          <div className="hidden md:flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <HeaderBtn onClick={() => headerTracingInputRef.current?.click()} title="밑그림 불러오기">
               <img src="/images/tracing.png" alt="밑그림 불러오기" className="w-5 h-5 invert" />
             </HeaderBtn>
@@ -492,10 +344,6 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             </HeaderBtn>
           </div>
 
-          <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" iconOnly={false} title="갤러리에 올리기" className="md:hidden">
-            {uploading ? '중…' : '↗ 올리기'}
-          </HeaderBtn>
-
         </div>
       </header>
 
@@ -507,7 +355,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
         {/* ── Left Sidebar ───────────────────────── */}
         <aside
-          className="hidden md:flex w-60 flex-col flex-shrink-0 overflow-y-auto"
+          className="flex w-60 flex-col flex-shrink-0 overflow-y-auto"
           style={{ background: PAGE_BG, borderRight: '1px solid rgba(255,255,255,0.08)' }}
         >
           <div className="flex flex-col gap-4 p-4 flex-1">
@@ -621,7 +469,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               <input
                 type="range"
                 min={0.25}
-                max={4}
+                max={2}
                 step={0.25}
                 value={zoom}
                 onChange={e => setZoom(Number(e.target.value))}
@@ -637,7 +485,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 >
                   초기화
                 </button>
-                <span className="text-xs text-gray-500">400%</span>
+                <span className="text-xs text-gray-500">200%</span>
               </div>
             </div>
 
@@ -645,7 +493,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
         </aside>
 
         {/* ── Canvas area ────────────────────────── */}
-        <div className="flex flex-1 min-w-0 min-h-0 flex-col overflow-hidden">
+        <div className="flex flex-1 relative items-center justify-center p-8 overflow-auto">
           <PixelCanvas
             pixels={pixels}
             gridCols={gridCols}
@@ -659,28 +507,6 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             onPaintComplete={addRecentColor}
             tracingImage={tracingImage}
             tracingOpacity={tracingOpacity}
-          />
-
-          <MobileEditorControls
-            tool={tool}
-            onToolChange={setTool}
-            onEyedropper={() => handleEyedrop(tool)}
-            selectedColor={selectedColor}
-            onColorChange={setSelectedColor}
-            recentColors={recentColors}
-            zoom={zoom}
-            onZoomChange={setZoom}
-            onZoomReset={() => setZoom(1)}
-            onClearAll={() => setShowClearModal(true)}
-            onSavePNG={handleSavePNG}
-            onSaveSketchbook={handleSaveSketchbook}
-            onOpenDoan={handleOpenDoan}
-            tracingImage={tracingImage}
-            tracingOpacity={tracingOpacity}
-            onTracingOpacityChange={setTracingOpacity}
-            onTracingRemove={() => setTracingImage(null)}
-            tracingInputRef={tracingInputRef}
-            onTracingUpload={handleTracingUpload}
           />
         </div>
         </>)}
