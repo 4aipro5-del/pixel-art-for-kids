@@ -77,6 +77,7 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
         ref={btnRef}
         onClick={onClick}
         disabled={disabled}
+        title={title}
         aria-label={title}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
@@ -467,11 +468,8 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
           {/* Save actions */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
-            <HeaderBtn onClick={handleSaveSketchbook} title="나의 스케치북">
-              <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
-            </HeaderBtn>
             <HeaderBtn onClick={() => headerTracingInputRef.current?.click()} title="밑그림 불러오기">
-              🖼️
+              <img src="/images/tracing.png" alt="밑그림 불러오기" className="w-5 h-5 invert" />
             </HeaderBtn>
             <input
               ref={headerTracingInputRef}
@@ -483,7 +481,12 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
             <HeaderBtn onClick={handleSavePNG} title="PNG 저장">
               <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
             </HeaderBtn>
-            <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">🖨️</HeaderBtn>
+            <HeaderBtn onClick={handleSaveSketchbook} title="나의 스케치북">
+              <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
+            </HeaderBtn>
+            <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">
+              <img src="/images/doan.png" alt="도안 만들기" className="w-5 h-5 invert" />
+            </HeaderBtn>
             <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" iconOnly={false} title="갤러리에 올리기">
               {uploading ? '올리는 중…' : '↗ 갤러리 올리기'}
             </HeaderBtn>
@@ -602,51 +605,6 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                   className="absolute inset-0 opacity-0 cursor-pointer w-full"
                 />
               </div>
-            </div>
-
-            {/* 밑그림 (트레이싱) */}
-            <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
-              <SectionLabel>밑그림</SectionLabel>
-              {!tracingImage ? (
-                <label
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-200"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}
-                >
-                  <span className="text-xs text-gray-400 font-medium">PNG 이미지 올리기…</span>
-                  <input
-                    ref={tracingInputRef}
-                    type="file"
-                    accept="image/png"
-                    className="hidden"
-                    onChange={handleTracingUpload}
-                  />
-                </label>
-              ) : (
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400 font-semibold">투명도</span>
-                    <span className="text-xs font-bold" style={{ color: ACCENT_YELLOW }}>
-                      {Math.round(tracingOpacity * 100)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={Math.round(tracingOpacity * 100)}
-                    onChange={e => setTracingOpacity(Number(e.target.value) / 100)}
-                    className="w-full cursor-pointer"
-                    style={{ accentColor: ACCENT_YELLOW }}
-                  />
-                  <button
-                    onClick={() => setTracingImage(null)}
-                    className="flex items-center justify-center gap-1 px-3 py-2 rounded-full text-xs font-semibold transition-colors"
-                    style={{ color: DANGER }}
-                  >
-                    ✕ 밑그림 지우기
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Spacer pushes zoom to bottom */}
