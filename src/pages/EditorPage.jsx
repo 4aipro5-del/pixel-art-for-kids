@@ -4,7 +4,7 @@ import PixelCanvas from '../components/PixelCanvas'
 import SketchbookModal from '../components/SketchbookModal'
 import HelpModal from '../components/HelpModal'
 import DoanView from '../components/DoanView'
-import { uploadWallPost, saveArtwork } from '../firebase'
+import { saveArtwork } from '../firebase'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixelart_sketchbook'
@@ -100,7 +100,7 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
   )
 }
 
-export default function EditorPage({ userName, gridCols, gridRows, ratio, orientation, resumeArtwork, onGoToWall, onGoToSetup, onEditArtwork }) {
+export default function EditorPage({ userName, gridCols, gridRows, ratio, orientation, resumeArtwork, onGoToGallery, onGoToSetup, onEditArtwork }) {
   const [pixels, setPixels] = useState(() => (
     resumeArtwork?.pixels ? resumeArtwork.pixels.map(row => [...row]) : makeEmpty(gridRows, gridCols)
   ))
@@ -111,7 +111,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   const [tool, setTool] = useState('pen')
   const [zoom, setZoom] = useState(1)
   const [showSketchbook, setShowSketchbook] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [showBackModal, setShowBackModal] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
@@ -364,29 +363,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     setShowSketchbook(true)
   }
 
-  const handleShareWall = async () => {
-    setUploading(true)
-    // 픽셀 데이터는 담벼락 업로드와 무관하게 즉시 갤러리용 artworks 컬렉션에 저장
-    // (Storage 업로드가 지연되거나 실패해도 갤러리에는 항상 반영되도록 분리)
-    saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
-    try {
-      // uploadWallPost가 네트워크/CORS 문제 등으로 응답 없이 멈추면 await가 영원히
-      // 끝나지 않아 finally도 실행되지 않는다 — 타임아웃으로 강제 종료시켜 버튼이
-      // '올리는 중…' 상태에 영구히 멈추는 것을 방지한다.
-      await Promise.race([
-        uploadWallPost(userName, getDataURL(512)),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('업로드 시간이 초과됐어요')), 20000)),
-      ])
-      showToast('담벼락에 올렸어요!')
-      onGoToWall()
-    } catch (err) {
-      console.error(err)
-      showToast('업로드 실패. 네트워크 상태를 확인하고 다시 시도해주세요.')
-    } finally {
-      setUploading(false)
-    }
-  }
-
   const handleOpenDoan = () => {
     // 도안 만들기 진입 시 작품 저장
     saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
@@ -466,7 +442,9 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
               <img src="/images/undo.png" alt="다시하기" className="w-5 h-5 invert" />
             </HeaderBtn>
             <div className="w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" title="전체 지우기">🗑️</HeaderBtn>
+            <HeaderBtn onClick={() => setShowClearModal(true)} variant="danger" title="전체 지우기">
+              <img src="/images/trash.png" alt="전체 지우기" className="w-5 h-5 invert" />
+            </HeaderBtn>
           </div>
 
           {/* Save actions */}
@@ -490,9 +468,28 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">
               <img src="/images/doan.png" alt="도안 만들기" className="w-5 h-5 invert" />
             </HeaderBtn>
-            <HeaderBtn onClick={handleShareWall} disabled={uploading} variant="primary" iconOnly={false} title="갤러리에 올리기">
-              {uploading ? '올리는 중…' : '↗ 갤러리 올리기'}
-            </HeaderBtn>
+            <button
+              onClick={onGoToGallery}
+              className="font-pixel flex items-center justify-center gap-2 h-10 px-5 rounded-full text-sm transition-colors hover:brightness-125"
+              style={{ background: PANEL_BG, color: ACCENT_YELLOW, border: `1px solid ${ACCENT_YELLOW}` }}
+            >
+              <span
+                aria-hidden="true"
+                className="w-4 h-4"
+                style={{
+                  background: ACCENT_YELLOW,
+                  WebkitMaskImage: 'url(/images/search.png)',
+                  maskImage: 'url(/images/search.png)',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                }}
+              />
+              픽셀 아트 갤러리 가기
+            </button>
           </div>
 
         </div>
@@ -725,10 +722,10 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             onClick={e => e.stopPropagation()}
           >
             <div
-              className="w-16 h-16 rounded-full border-2 flex items-center justify-center text-3xl"
+              className="w-16 h-16 rounded-full border-2 flex items-center justify-center"
               style={{ borderColor: DANGER }}
             >
-              🗑️
+              <img src="/images/trash.png" alt="전체 지우기" className="w-8 h-8 invert" />
             </div>
 
             <div className="text-center flex flex-col gap-2">

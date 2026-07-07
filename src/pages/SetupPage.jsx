@@ -67,7 +67,7 @@ function MiniGrid({ count, size, active }) {
   )
 }
 
-export default function SetupPage({ onNext }) {
+export default function SetupPage({ onNext, onGoHome }) {
   const [ratio, setRatio] = useState('square')
   const [orientation, setOrientation] = useState('landscape')
   const [levelIndex, setLevelIndex] = useState(0)
@@ -255,12 +255,34 @@ export default function SetupPage({ onNext }) {
 
             {/* CTA 버튼 */}
             <div
-              className="sticky bottom-0 -mx-6 flex justify-center px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2"
+              className="sticky bottom-0 -mx-6 flex items-center justify-center gap-3 px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2"
               style={{ background: `linear-gradient(to top, ${PAGE_BG}, ${PAGE_BG}, transparent)` }}
             >
               <button
+                onClick={onGoHome}
+                title="처음으로"
+                className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center transition-all hover:brightness-125 active:scale-[0.97]"
+                style={{ background: PANEL_BG, border: `1px solid ${ACCENT_YELLOW}` }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="w-7 h-7"
+                  style={{
+                    background: ACCENT_YELLOW,
+                    WebkitMaskImage: 'url(/images/home.png)',
+                    maskImage: 'url(/images/home.png)',
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    maskPosition: 'center',
+                  }}
+                />
+              </button>
+              <button
                 onClick={() => onNext({ ...grid, ratio, orientation })}
-                className="font-pixel w-full sm:w-auto py-4 px-20 rounded-full text-lg sm:text-xl text-black transition-all hover:brightness-105 active:scale-[0.97]"
+                className="font-pixel flex-1 sm:flex-none sm:w-auto py-4 px-20 rounded-full text-lg sm:text-xl text-black transition-all hover:brightness-105 active:scale-[0.97]"
                 style={{ background: ACCENT_YELLOW, boxShadow: '0 8px 24px rgba(247,208,112,0.25)' }}
               >
                 {grid.cols} × {grid.rows} 그리기 →

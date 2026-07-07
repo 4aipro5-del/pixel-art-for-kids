@@ -134,9 +134,25 @@ export default function EntryPage({ onNext, onGoToGallery }) {
 
           <button
             onClick={onGoToGallery}
-            className="font-pixel mt-6 rounded-md border border-[#f7d070] px-6 py-3 text-lg font-bold tracking-tight text-gray-300 underline-offset-4 transition-colors hover:bg-[#f7d070]/10 hover:text-[#f7d070] hover:underline"
+            className="font-pixel mt-6 flex items-center justify-center gap-2 rounded-md border border-[#f7d070] px-6 py-3 text-lg font-bold tracking-tight transition-colors hover:brightness-125"
+            style={{ background: PANEL_BG, color: ACCENT_YELLOW }}
           >
-            픽셀 아트 갤러리 가기 →
+            <span
+              aria-hidden="true"
+              className="w-5 h-5"
+              style={{
+                background: ACCENT_YELLOW,
+                WebkitMaskImage: 'url(/images/search.png)',
+                maskImage: 'url(/images/search.png)',
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+              }}
+            />
+            픽셀 아트 갤러리 가기
           </button>
 
         </div>

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, collection, addDoc, getDocs, orderBy, query, limit } from 'firebase/firestore'
+import { getFirestore, collection, addDoc, deleteDoc, doc, getDocs, orderBy, query, limit } from 'firebase/firestore'
 import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -44,14 +44,20 @@ export async function getWallPosts() {
 // ── Artworks (픽셀 데이터 저장 + 진입 화면 갤러리) ──────────────────────
 
 // pixels는 2D 배열이라 Firestore가 중첩 배열을 지원하지 않으므로 JSON 문자열로 직렬화
+// 생성된 문서 ID를 반환 — 로그인 없이도 "내 작품"을 로컬스토리지로 식별하기 위해 필요
 export async function saveArtwork(userName, pixels, cols, rows) {
-  await addDoc(collection(db, 'artworks'), {
+  const docRef = await addDoc(collection(db, 'artworks'), {
     userName,
     pixelsJson: JSON.stringify(pixels),
     cols,
     rows,
     createdAt: new Date(),
   })
+  return docRef.id
+}
+
+export async function deleteArtwork(id) {
+  await deleteDoc(doc(db, 'artworks', id))
 }
 
 export async function getRecentArtworks(limitCount = 24) {

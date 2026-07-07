@@ -41,6 +41,12 @@ export default function App() {
             setEditorKey(k => k + 1)
             navigate('editor')
           }}
+          onGoHome={() => {
+            setUserName('')
+            setCanvasConfig({ cols: 16, rows: 16 })
+            setResumeArtwork(null)
+            navigate('entry')
+          }}
         />
       )}
       {page === 'editor' && (
@@ -52,7 +58,7 @@ export default function App() {
           ratio={canvasConfig.ratio}
           orientation={canvasConfig.orientation}
           resumeArtwork={resumeArtwork}
-          onGoToWall={() => navigate('wall')}
+          onGoToGallery={() => navigate('gallery')}
           onGoToSetup={() => navigate('setup')}
           onEditArtwork={(artwork) => {
             setCanvasConfig({ cols: artwork.cols, rows: artwork.rows, ratio: artwork.ratio, orientation: artwork.orientation })
@@ -65,7 +71,7 @@ export default function App() {
         <WallPage onBack={() => window.history.back()} />
       )}
       {page === 'gallery' && (
-        <GalleryPage onBack={() => window.history.back()} />
+        <GalleryPage userName={userName} onBack={() => window.history.back()} />
       )}
     </div>
   )
