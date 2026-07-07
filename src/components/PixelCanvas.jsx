@@ -40,6 +40,18 @@ export default function PixelCanvas({
     redrawAll()
   }, [pixels]) // eslint-disable-line
 
+  // 캔버스 backing store를 devicePixelRatio에 맞춰 설정 — 이렇게 해야
+  // 0.5px 두께의 모눈 선이 화면 배율(HiDPI 등)에 상관없이 항상 선명하게 렌더링된다.
+  // CSS 픽셀 크기(cssW/cssH)는 그대로 두고 실제 비트맵 해상도만 dpr배로 키운다.
+  function applyCanvasSize(canvas, cssW, cssH) {
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = Math.round(cssW * dpr)
+    canvas.height = Math.round(cssH * dpr)
+    canvas.style.width = `${cssW}px`
+    canvas.style.height = `${cssH}px`
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0)
+  }
+
   // ── ResizeObserver ────────────────────────────────────────────────────
   useEffect(() => {
     const resize = () => {
@@ -54,8 +66,7 @@ export default function PixelCanvas({
       ))
       baseCellSizeRef.current = base
       cellSizeRef.current = Math.max(1, Math.round(base * zoomRef.current))
-      canvas.width = gridCols * cellSizeRef.current
-      canvas.height = gridRows * cellSizeRef.current
+      applyCanvasSize(canvas, gridCols * cellSizeRef.current, gridRows * cellSizeRef.current)
       redrawAll()
     }
     resize()
@@ -69,8 +80,7 @@ export default function PixelCanvas({
     const canvas = canvasRef.current
     if (!canvas) return
     cellSizeRef.current = Math.max(1, Math.round(baseCellSizeRef.current * zoom))
-    canvas.width = gridCols * cellSizeRef.current
-    canvas.height = gridRows * cellSizeRef.current
+    applyCanvasSize(canvas, gridCols * cellSizeRef.current, gridRows * cellSizeRef.current)
     redrawAll()
   }, [zoom]) // eslint-disable-line
 
@@ -89,8 +99,9 @@ export default function PixelCanvas({
     if (!canvas || !pixelsRef.current) return
     const ctx = canvas.getContext('2d')
     const cs = cellSizeRef.current
+    // ctx에 dpr 스케일 transform이 걸려 있으므로, 그리기 좌표는 항상 CSS 픽셀 기준(backing store 크기가 아님)
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, gridColsRef.current * cs, gridRowsRef.current * cs)
     for (let r = 0; r < gridRowsRef.current; r++) {
       for (let c = 0; c < gridColsRef.current; c++) {
         drawCell(ctx, r, c, cs)
@@ -135,8 +146,10 @@ export default function PixelCanvas({
     const readCanvasColor = (cell) => {
       try {
         const cs = cellSizeRef.current
-        const px = Math.floor(cell.c * cs + cs * 0.5)
-        const py = Math.floor(cell.r * cs + cs * 0.5)
+        const dpr = window.devicePixelRatio || 1
+        // getImageData는 ctx의 transform을 무시하고 backing store의 실제 픽셀을 읽으므로 dpr을 곱해준다
+        const px = Math.floor((cell.c * cs + cs * 0.5) * dpr)
+        const py = Math.floor((cell.r * cs + cs * 0.5) * dpr)
         const ctx = canvas.getContext('2d')
         if (!ctx) return null
         const [r, g, b] = ctx.getImageData(px, py, 1, 1).data
