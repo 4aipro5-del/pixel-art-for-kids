@@ -259,7 +259,7 @@ export default function SetupPage({ onNext }) {
               style={{ background: `linear-gradient(to top, ${PAGE_BG}, ${PAGE_BG}, transparent)` }}
             >
               <button
-                onClick={() => onNext(grid)}
+                onClick={() => onNext({ ...grid, ratio, orientation })}
                 className="font-pixel w-full sm:w-auto py-4 px-20 rounded-full text-lg sm:text-xl text-black transition-all hover:brightness-105 active:scale-[0.97]"
                 style={{ background: ACCENT_YELLOW, boxShadow: '0 8px 24px rgba(247,208,112,0.25)' }}
               >

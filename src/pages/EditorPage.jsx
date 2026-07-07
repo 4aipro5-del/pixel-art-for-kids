@@ -98,8 +98,10 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
   )
 }
 
-export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, onGoToSetup }) {
-  const [pixels, setPixels] = useState(() => makeEmpty(gridRows, gridCols))
+export default function EditorPage({ userName, gridCols, gridRows, ratio, orientation, resumeArtwork, onGoToWall, onGoToSetup, onEditArtwork }) {
+  const [pixels, setPixels] = useState(() => (
+    resumeArtwork?.pixels ? resumeArtwork.pixels.map(row => [...row]) : makeEmpty(gridRows, gridCols)
+  ))
   const [history, setHistory] = useState([])
   const [future, setFuture] = useState([])
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0])
@@ -233,13 +235,15 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     setShowClearModal(false)
   }
 
+  // 불러온 작품이 있으면 그 파일명을 기본값으로, 없으면 오늘 날짜 기반 이름을 생성
   const buildDefaultFileName = useCallback(() => {
+    if (resumeArtwork?.fileName) return resumeArtwork.fileName
     const today = new Date()
     const y = today.getFullYear()
     const m = String(today.getMonth() + 1).padStart(2, '0')
     const d = String(today.getDate()).padStart(2, '0')
     return `픽셀아트_${userName}_${y}${m}${d}`
-  }, [userName])
+  }, [resumeArtwork, userName])
 
   const openSaveModal = useCallback(() => {
     setSaveFileName(buildDefaultFileName())
@@ -253,14 +257,49 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     a.download = `${name}.png`
     a.click()
     saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
-    showToast('PNG로 저장했어요!')
+
+    // 스케치북 목록에 이름 기준으로 저장 — 같은 이름이면 덮어쓰기(Update), 다르면 새 항목(Save As)
+    const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
+    const existingIdx = all.findIndex(it => it.userName === userName && it.fileName === name)
+    const now = new Date().toISOString()
+    const entry = {
+      userName,
+      fileName: name,
+      pixels,
+      dataUrl: getDataURL(),
+      cols: gridCols,
+      rows: gridRows,
+      ratio,
+      orientation,
+      updatedAt: now,
+    }
+    if (existingIdx >= 0) {
+      all[existingIdx] = { ...all[existingIdx], ...entry }
+      showToast(`'${name}'에 덮어썼어요!`)
+    } else {
+      all.unshift({ id: Date.now(), createdAt: now, ...entry })
+      showToast('PNG로 저장했어요!')
+    }
+    localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
+
     setIsSaveModalOpen(false)
-  }, [saveFileName, buildDefaultFileName, getDataURL, userName, pixels, gridCols, gridRows])
+  }, [saveFileName, buildDefaultFileName, getDataURL, userName, pixels, gridCols, gridRows, ratio, orientation])
 
   const handleSaveSketchbook = () => {
     const dataUrl = getDataURL()
     const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
-    all.unshift({ id: Date.now(), userName, dataUrl, cols: gridCols, rows: gridRows, createdAt: new Date().toISOString() })
+    all.unshift({
+      id: Date.now(),
+      userName,
+      fileName: buildDefaultFileName(),
+      pixels,
+      dataUrl,
+      cols: gridCols,
+      rows: gridRows,
+      ratio,
+      orientation,
+      createdAt: new Date().toISOString(),
+    })
     localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
     setShowSketchbook(true)
     showToast('스케치북에 저장했어요!')
@@ -554,7 +593,14 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
       )}
 
       {showSketchbook && (
-        <SketchbookModal userName={userName} onClose={() => setShowSketchbook(false)} />
+        <SketchbookModal
+          userName={userName}
+          onClose={() => setShowSketchbook(false)}
+          onEdit={(artwork) => {
+            setShowSketchbook(false)
+            onEditArtwork(artwork)
+          }}
+        />
       )}
 
       {/* 전체 지우기 확인 모달 */}
