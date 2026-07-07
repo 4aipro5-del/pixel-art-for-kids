@@ -12,20 +12,20 @@ const DANGER = '#f87171'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
 
-// 무지개 + 기본 12색 팔레트
-const PASTEL_COLORS = [
-  '#F87171', // 빨강  red-400
-  '#FB923C', // 주황  orange-400
-  '#FCD34D', // 노랑  amber-300
-  '#4ADE80', // 초록  green-400
-  '#38BDF8', // 파랑  sky-400
-  '#6366F1', // 남색  indigo-500
-  '#C084FC', // 보라  purple-400
-  '#F472B6', // 분홍  pink-400
-  '#92400E', // 갈색  amber-800
+// 크레파스 톤 12색 팔레트 (형광기를 빼고 연두/초록/하늘 경계를 명확히 구분)
+const PRESET_COLORS = [
+  '#E53935', // 빨강
+  '#FF9100', // 주황
+  '#FDD835', // 노랑
+  '#9CCC65', // 연두
+  '#2E7D32', // 초록
+  '#4FC3F7', // 하늘
+  '#1565C0', // 파랑
+  '#8E24AA', // 보라
+  '#6D4C41', // 갈색
   '#FFFFFF', // 흰색
-  '#94A3B8', // 회색  slate-400
-  '#000000', // 검은색
+  '#9E9E9E', // 회색
+  '#212121', // 검은색
 ]
 
 const TOOLS = [
@@ -102,7 +102,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const [pixels, setPixels] = useState(() => makeEmpty(gridRows, gridCols))
   const [history, setHistory] = useState([])
   const [future, setFuture] = useState([])
-  const [selectedColor, setSelectedColor] = useState(PASTEL_COLORS[0])
+  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0])
   const [recentColors, setRecentColors] = useState([])
   const [tool, setTool] = useState('pen')
   const [zoom, setZoom] = useState(1)
@@ -395,7 +395,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
 
               {/* Palette grid */}
               <div className="grid grid-cols-4 gap-1.5 mb-2.5">
-                {PASTEL_COLORS.map(color => (
+                {PRESET_COLORS.map(color => (
                   <button
                     key={color}
                     onClick={() => setSelectedColor(color)}
