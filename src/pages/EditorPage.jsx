@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import PixelCanvas from '../components/PixelCanvas'
 import SketchbookModal from '../components/SketchbookModal'
+import HelpModal from '../components/HelpModal'
 import DoanView from '../components/DoanView'
 import { uploadWallPost, saveArtwork } from '../firebase'
 
@@ -53,9 +54,10 @@ function SectionLabel({ children }) {
   )
 }
 
-function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', iconOnly = true, className = 'inline-flex' }) {
+function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', iconOnly = true, size = 'md', className = 'inline-flex' }) {
   const base = 'font-pixel flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed select-none whitespace-nowrap shrink-0'
-  const shape = iconOnly ? 'w-10 h-10 rounded-full text-lg' : 'gap-2 px-5 py-2.5 rounded-full text-sm'
+  const iconSizes = { md: 'w-10 h-10 rounded-full text-lg', lg: 'w-11 h-11 rounded-full text-lg' }
+  const shape = iconOnly ? iconSizes[size] : 'gap-2 px-5 py-2.5 rounded-full text-sm'
   const styles = {
     ghost:   'bg-[#111214] text-white hover:brightness-125',
     danger:  'bg-[#111214] text-white hover:text-red-400',
@@ -112,6 +114,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   const [uploading, setUploading] = useState(false)
   const [showBackModal, setShowBackModal] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
+  const [showHelpModal, setShowHelpModal] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
   const [saveFileName, setSaveFileName] = useState('')
   const [doanMode, setDoanMode] = useState(false)
@@ -363,15 +366,22 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
 
   const handleShareWall = async () => {
     setUploading(true)
+    // 픽셀 데이터는 담벼락 업로드와 무관하게 즉시 갤러리용 artworks 컬렉션에 저장
+    // (Storage 업로드가 지연되거나 실패해도 갤러리에는 항상 반영되도록 분리)
+    saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
     try {
-      await uploadWallPost(userName, getDataURL(512))
-      // 픽셀 데이터도 artworks 컬렉션에 저장 (진입 화면 갤러리용)
-      saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
+      // uploadWallPost가 네트워크/CORS 문제 등으로 응답 없이 멈추면 await가 영원히
+      // 끝나지 않아 finally도 실행되지 않는다 — 타임아웃으로 강제 종료시켜 버튼이
+      // '올리는 중…' 상태에 영구히 멈추는 것을 방지한다.
+      await Promise.race([
+        uploadWallPost(userName, getDataURL(512)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('업로드 시간이 초과됐어요')), 20000)),
+      ])
       showToast('담벼락에 올렸어요!')
       onGoToWall()
     } catch (err) {
       console.error(err)
-      showToast('업로드 실패. Firebase 설정을 확인해주세요.')
+      showToast('업로드 실패. 네트워크 상태를 확인하고 다시 시도해주세요.')
     } finally {
       setUploading(false)
     }
@@ -426,10 +436,12 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
       >
         <div className="flex items-center justify-between gap-3 px-6 h-full min-w-max">
 
-          {/* Brand + 이전 단계 */}
+          {/* Brand + 처음 화면으로 */}
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-pixel text-xl tracking-tight whitespace-nowrap" style={{ color: ACCENT_YELLOW }}>PIXEL ART</span>
-            <HeaderBtn onClick={() => setShowBackModal(true)} title="이전 단계">←</HeaderBtn>
+            <span className="font-pixel text-2xl tracking-tight whitespace-nowrap" style={{ color: ACCENT_YELLOW }}>PIXEL ART</span>
+            <HeaderBtn onClick={() => setShowBackModal(true)} title="처음 화면으로" size="lg">
+              <img src="/images/home.png" alt="처음 화면으로" className="w-6 h-6 invert" />
+            </HeaderBtn>
           </div>
 
           {/* 자동 저장 상태 */}
@@ -597,6 +609,30 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             {/* Spacer pushes zoom to bottom */}
             <div className="flex-1" />
 
+            {/* 도움말 */}
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="font-pixel flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm transition-colors hover:brightness-125"
+              style={{ background: PANEL_BG, color: ACCENT_YELLOW, border: `1px solid ${ACCENT_YELLOW}` }}
+            >
+              <span
+                aria-hidden="true"
+                className="w-4 h-4"
+                style={{
+                  background: ACCENT_YELLOW,
+                  WebkitMaskImage: 'url(/images/question.png)',
+                  maskImage: 'url(/images/question.png)',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                }}
+              />
+              사용법 안내
+            </button>
+
             {/* Zoom */}
             <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
               <div className="flex items-center justify-between mb-2.5">
@@ -670,6 +706,10 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             onEditArtwork(artwork)
           }}
         />
+      )}
+
+      {showHelpModal && (
+        <HelpModal onClose={() => setShowHelpModal(false)} />
       )}
 
       {/* 전체 지우기 확인 모달 */}
