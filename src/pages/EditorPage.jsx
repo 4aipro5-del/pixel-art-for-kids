@@ -110,6 +110,8 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const [uploading, setUploading] = useState(false)
   const [showBackModal, setShowBackModal] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+  const [saveFileName, setSaveFileName] = useState('')
   const [doanMode, setDoanMode] = useState(false)
   const [toast, setToast] = useState(null)
   const [tracingImage, setTracingImage] = useState(null)
@@ -117,6 +119,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   const toastTimer = useRef(null)
   const prevToolRef = useRef('pen')  // eyedrop 취소 시 이전 도구 복원용
   const headerTracingInputRef = useRef(null)
+  const saveFileInputRef = useRef(null)
 
   const handleTracingUpload = (e) => {
     const file = e.target.files[0]
@@ -230,13 +233,29 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     setShowClearModal(false)
   }
 
-  const handleSavePNG = useCallback(() => {
+  const buildDefaultFileName = useCallback(() => {
+    const today = new Date()
+    const y = today.getFullYear()
+    const m = String(today.getMonth() + 1).padStart(2, '0')
+    const d = String(today.getDate()).padStart(2, '0')
+    return `픽셀아트_${userName}_${y}${m}${d}`
+  }, [userName])
+
+  const openSaveModal = useCallback(() => {
+    setSaveFileName(buildDefaultFileName())
+    setIsSaveModalOpen(true)
+  }, [buildDefaultFileName])
+
+  const handleConfirmSavePNG = useCallback(() => {
+    const name = saveFileName.trim() || buildDefaultFileName()
     const a = document.createElement('a')
     a.href = getDataURL(512)
-    a.download = `픽셀아트_${userName}.png`
+    a.download = `${name}.png`
     a.click()
+    saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
     showToast('PNG로 저장했어요!')
-  }, [getDataURL, userName])
+    setIsSaveModalOpen(false)
+  }, [saveFileName, buildDefaultFileName, getDataURL, userName, pixels, gridCols, gridRows])
 
   const handleSaveSketchbook = () => {
     const dataUrl = getDataURL()
@@ -272,7 +291,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   // Keyboard shortcuts via stable refs
   const undoRef = useRef(null); undoRef.current = handleUndo
   const redoRef = useRef(null); redoRef.current = handleRedo
-  const savePNGRef = useRef(null); savePNGRef.current = handleSavePNG
+  const savePNGRef = useRef(null); savePNGRef.current = openSaveModal
 
   useEffect(() => {
     const onKey = (e) => {
@@ -286,6 +305,18 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // 이미지 저장 모달: ESC로 닫기 + 열릴 때 입력창 자동 포커스
+  useEffect(() => {
+    if (!isSaveModalOpen) return
+    saveFileInputRef.current?.focus()
+    saveFileInputRef.current?.select()
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIsSaveModalOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isSaveModalOpen])
 
   const canUndo = history.length > 0
   const canRedo = future.length > 0
@@ -330,7 +361,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
               className="hidden"
               onChange={handleTracingUpload}
             />
-            <HeaderBtn onClick={handleSavePNG} title="PNG 저장">
+            <HeaderBtn onClick={openSaveModal} title="PNG 저장">
               <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
             </HeaderBtn>
             <HeaderBtn onClick={handleSaveSketchbook} title="나의 스케치북">
@@ -580,17 +611,9 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
           style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
         >
           <div
-            className="rounded-2xl px-8 py-8 flex flex-col items-center gap-6 mx-4"
+            className="rounded-2xl px-8 pt-6 pb-8 flex flex-col items-center gap-6 mx-4"
             style={{ maxWidth: 380, width: '100%', background: PANEL_BG }}
           >
-            {/* 아이콘 */}
-            <div
-              className="w-16 h-16 rounded-full border-2 flex items-center justify-center text-3xl"
-              style={{ borderColor: ACCENT_YELLOW }}
-            >
-              🖌️
-            </div>
-
             {/* 메시지 */}
             <div className="text-center flex flex-col gap-2">
               <p className="font-pixel text-base text-white">크기 선택 화면으로 돌아갈까요?</p>
@@ -616,6 +639,53 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
                 style={{ background: ACCENT_YELLOW, color: '#000000' }}
               >
                 확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이미지 저장 파일명 입력 모달 */}
+      {isSaveModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setIsSaveModalOpen(false)}
+        >
+          <div
+            className="bg-[#1e1e1e] rounded-2xl px-8 py-8 flex flex-col gap-5 mx-4"
+            style={{ maxWidth: 380, width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-2">
+              <p className="font-pixel text-base text-white">이미지로 저장</p>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                저장할 파일 이름을 입력해주세요.
+              </p>
+            </div>
+
+            <input
+              ref={saveFileInputRef}
+              type="text"
+              value={saveFileName}
+              onChange={e => setSaveFileName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleConfirmSavePNG() }}
+              placeholder={buildDefaultFileName()}
+              className="w-full px-4 py-3 rounded-xl text-sm text-white bg-[#111214] border border-white/10 outline-none transition-colors focus:border-[#f7d070]"
+            />
+
+            <div className="flex gap-3 w-full justify-end">
+              <button
+                onClick={() => setIsSaveModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-400 transition-colors hover:text-gray-200"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmSavePNG}
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-black transition-colors hover:brightness-105 active:scale-[0.97] bg-[#fdd835]"
+              >
+                저장
               </button>
             </div>
           </div>
