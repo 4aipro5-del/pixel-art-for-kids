@@ -91,11 +91,10 @@ export default function SetupPage({ onNext, onGoHome }) {
 
             {/* Title */}
             <div className="text-center">
-              <h1 className="font-pixel text-4xl sm:text-5xl leading-tight mb-4 sm:mb-6 text-white">
-                <span className="block">어떤 크기에</span>
-                <span className="block">그릴까요?</span>
+              <h1 className="font-pixel whitespace-nowrap text-3xl sm:text-5xl leading-tight mb-4 sm:mb-6 text-white">
+                어떤 크기에 그릴까요?
               </h1>
-              <p className="text-base sm:text-lg text-gray-400">화면 비율과 픽셀 해상도를 골라요</p>
+              <p className="text-[1.1rem] sm:text-[1.2375rem] text-gray-400">화면 비율과 픽셀 해상도를 골라요</p>
             </div>
 
             <div
@@ -117,14 +116,14 @@ export default function SetupPage({ onNext, onGoHome }) {
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
-                  <p className="font-pixel text-lg text-white">
+                  <p className="text-[0.825rem] font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
+                  <p className="font-pixel text-[1.2375rem] text-white">
                     {selectedRatio.label} · {grid.cols} × {grid.rows}
                   </p>
                 </div>
               </div>
               <span
-                className="font-pixel rounded-full px-4 py-2 text-sm text-black"
+                className="font-pixel rounded-full px-4 py-2 text-[0.9625rem] text-black"
                 style={{ background: ACCENT_YELLOW }}
               >
                 {selectedLevel.badge}
@@ -133,7 +132,7 @@ export default function SetupPage({ onNext, onGoHome }) {
 
             {/* ── 비율 선택 ────────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+              <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 화면 비율
               </p>
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -159,11 +158,11 @@ export default function SetupPage({ onNext, onGoHome }) {
                         />
                       </div>
                       <div className="text-center">
-                        <p className="font-pixel text-base sm:text-lg" style={{ color: active ? '#000000' : '#e2e8f0' }}>
+                        <p className="font-pixel-kr text-[1.1rem] sm:text-[1.2375rem]" style={{ color: active ? '#000000' : '#e2e8f0' }}>
                           {r.label}
                         </p>
                         <p
-                          className="hidden sm:block text-xs mt-1 leading-snug"
+                          className="hidden sm:block text-[0.825rem] mt-1 leading-snug"
                           style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
                         >
                           {r.sublabel}
@@ -178,7 +177,7 @@ export default function SetupPage({ onNext, onGoHome }) {
             {/* ── 화면 방향 선택 (정사각형 제외) ───────────────────── */}
             {selectedRatio.hasOrientation && (
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+                <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                   화면 방향
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
@@ -191,7 +190,7 @@ export default function SetupPage({ onNext, onGoHome }) {
                       <button
                         key={o.id}
                         onClick={() => setOrientation(o.id)}
-                        className="font-pixel py-3 sm:py-4 rounded-2xl text-sm sm:text-base transition-all active:scale-[0.98]"
+                        className="font-pixel py-3 sm:py-4 rounded-2xl text-[0.9625rem] sm:text-[1.1rem] transition-all active:scale-[0.98]"
                         style={{
                           background: active ? ACCENT_YELLOW : PANEL_BG,
                           color: active ? '#000000' : '#e2e8f0',
@@ -207,7 +206,7 @@ export default function SetupPage({ onNext, onGoHome }) {
 
             {/* ── 해상도 선택 ──────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+              <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 픽셀 해상도
               </p>
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -225,13 +224,13 @@ export default function SetupPage({ onNext, onGoHome }) {
                       <MiniGrid count={lv.dotCount} size={lv.dotSize} active={active} />
 
                       {/* 격자 크기 */}
-                      <p className="font-pixel text-lg sm:text-xl tabular-nums" style={{ color: active ? '#000000' : '#e2e8f0' }}>
+                      <p className="font-pixel text-[1.2375rem] sm:text-[1.375rem] tabular-nums" style={{ color: active ? '#000000' : '#e2e8f0' }}>
                         {g.cols} × {g.rows}
                       </p>
 
                       {/* 난이도 뱃지 */}
                       <span
-                        className="font-pixel text-[10px] sm:text-xs px-3 py-1 rounded-full"
+                        className="font-pixel text-[11px] sm:text-[0.825rem] px-3 py-1 rounded-full"
                         style={{
                           background: active ? 'rgba(0,0,0,0.15)' : 'transparent',
                           color: active ? '#000000' : ACCENT_YELLOW,
@@ -242,7 +241,7 @@ export default function SetupPage({ onNext, onGoHome }) {
                       </span>
 
                       <p
-                        className="hidden sm:block text-xs text-center leading-snug"
+                        className="hidden sm:block text-[0.825rem] text-center leading-snug"
                         style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
                       >
                         {lv.desc}
@@ -282,7 +281,7 @@ export default function SetupPage({ onNext, onGoHome }) {
               </button>
               <button
                 onClick={() => onNext({ ...grid, ratio, orientation })}
-                className="font-pixel flex-1 sm:flex-none sm:w-auto py-4 px-20 rounded-full text-lg sm:text-xl text-black transition-all hover:brightness-105 active:scale-[0.97]"
+                className="font-pixel flex-1 sm:flex-none sm:w-auto py-4 px-20 rounded-full text-[1.2375rem] sm:text-[1.375rem] text-black transition-all hover:brightness-105 active:scale-[0.97]"
                 style={{ background: ACCENT_YELLOW, boxShadow: '0 8px 24px rgba(247,208,112,0.25)' }}
               >
                 {grid.cols} × {grid.rows} 그리기 →

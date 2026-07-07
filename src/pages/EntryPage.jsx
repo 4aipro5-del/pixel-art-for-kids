@@ -154,10 +154,11 @@ export default function EntryPage({ onNext, onGoToGallery }) {
 
             <button
               type="submit"
-              className="font-pixel w-full rounded-full px-8 py-5 text-2xl text-black transition-all hover:brightness-105 active:scale-[0.98] sm:py-6 sm:text-3xl"
+              className="font-pixel flex w-full items-center justify-center gap-2 rounded-full px-8 py-5 text-2xl leading-none text-black transition-all hover:brightness-105 active:scale-[0.98] sm:py-6 sm:text-3xl"
               style={{ background: ACCENT_YELLOW, boxShadow: '0 8px 24px rgba(247,208,112,0.25)' }}
             >
-              시작하기 →
+              <span className="leading-none">시작하기</span>
+              <span aria-hidden="true" className="inline-block leading-none">→</span>
             </button>
           </form>
 
