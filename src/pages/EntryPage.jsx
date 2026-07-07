@@ -81,18 +81,21 @@ export default function EntryPage({ onNext, onGoToGallery }) {
       <main className="flex min-h-screen w-full items-center justify-center px-4 py-6 sm:px-8">
         <div className="flex w-full max-w-3xl flex-col items-center gap-4 text-center sm:gap-5">
 
-          <div
-            className="font-pixel inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs text-black"
-            style={{ background: ACCENT_YELLOW }}
-          >
-            오늘의그림 스튜디오
-          </div>
+          <img
+            src="/images/logo.png"
+            alt="오늘의그림 스튜디오"
+            width={440}
+            height={120}
+            loading="eager"
+            decoding="async"
+            className="h-9 w-auto select-none"
+          />
 
           <h1
-            className="font-pixel leading-[0.9] select-none text-white"
+            className="font-pixel-en leading-[1.3] select-none text-white"
             style={{
-              fontSize: 'clamp(2.8rem, 7vw, 5rem)',
-              letterSpacing: '0.06em',
+              fontSize: 'clamp(2.2rem, 5.6vw, 4rem)',
+              letterSpacing: '0.02em',
             }}
           >
             <span className="block">PIXEL</span>

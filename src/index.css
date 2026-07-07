@@ -2,13 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DungGeunMo retro pixel font — 픽셀아트 타이틀 전용 */
+/* DungGeunMo retro pixel font — 픽셀아트 타이틀 전용
+   font-display: optional → 폰트가 짧은 대기 시간 안에 준비되지 않으면 그 렌더링에서는
+   대체 폰트로 확정하고 이후에 로드되어도 다시 바꿔치기(swap)하지 않는다.
+   이렇게 하면 '기본 폰트로 잠깐 보였다가 픽셀 폰트로 바뀌는' 깜빡임 자체가 발생하지 않는다.
+   index.html의 preload와 함께 사용해 대부분의 경우 첫 렌더부터 픽셀 폰트가 바로 보이게 한다. */
 @font-face {
   font-family: 'DungGeunMo';
-  src: url('/fonts/DungGeunMo.ttf') format('truetype');
+  src: url('/fonts/DungGeunMo.woff2') format('woff2'),
+       url('/fonts/DungGeunMo.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
+}
+
+/* Press Start 2P — 영문/숫자 전용 구글 픽셀 폰트 (한글 글리프 없음) */
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('/fonts/PressStart2P.woff2') format('woff2'),
+       url('/fonts/PressStart2P.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+}
+
+/* 'PixelMixed' — 같은 font-family 이름에 unicode-range로 두 폰트를 겹쳐 등록해,
+   브라우저가 문자 단위로 자동으로 알맞은 폰트를 골라 쓰게 한다.
+   라틴 문자/숫자/기본 기호는 Press Start 2P, 한글(완성형·자모·호환자모)은 DungGeunMo로 렌더링되어
+   같은 문장 안에 한글과 영문/숫자가 섞여 있어도 서로 다른 폰트가 자연스럽게 나뉘어 적용된다. */
+@font-face {
+  font-family: 'PixelMixed';
+  src: url('/fonts/PressStart2P.woff2') format('woff2'),
+       url('/fonts/PressStart2P.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+  unicode-range: U+0000-00FF, U+2000-206F, U+2190-21FF;
+}
+@font-face {
+  font-family: 'PixelMixed';
+  src: url('/fonts/DungGeunMo.woff2') format('woff2'),
+       url('/fonts/DungGeunMo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+  unicode-range: U+AC00-D7A3, U+1100-11FF, U+3130-318F;
 }
 
 * { box-sizing: border-box; }
@@ -29,8 +67,14 @@ canvas {
 .header-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .header-scrollbar::-webkit-scrollbar { display: none; }
 
+/* 사이트 전역 픽셀 폰트 — 한글은 DungGeunMo, 영문/숫자는 자동으로 Press Start 2P로 렌더링됨 */
 .font-pixel {
-  font-family: 'DungGeunMo', 'Courier New', monospace;
+  font-family: 'PixelMixed', 'DungGeunMo', 'Courier New', monospace;
+}
+
+/* 영문/숫자 전용 텍스트에 Press Start 2P를 명시적으로 강제 적용할 때 사용 (예: PIXEL ART 타이틀) */
+.font-pixel-en {
+  font-family: 'Press Start 2P', 'Courier New', monospace;
 }
 
 @keyframes pixel-float {
