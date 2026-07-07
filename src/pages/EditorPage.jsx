@@ -123,6 +123,15 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   const headerTracingInputRef = useRef(null)
   const saveFileInputRef = useRef(null)
 
+  // 자동 저장이 덮어쓸 스케치북 항목의 고유 ID. 불러온 작품이면 그 ID를 그대로 이어받고,
+  // 새로 시작한 캔버스면 이 세션 동안 고정되는 새 ID를 발급해 매번 새 항목이 쌓이지 않게 한다.
+  const projectIdRef = useRef(resumeArtwork?.id ?? Date.now())
+  const currentFileNameRef = useRef(resumeArtwork?.fileName || null)
+  // 마지막으로 저장을 예약한 pixels 참조 — 최초값과 동일하면(StrictMode의 개발 모드 이펙트
+  // 이중 실행 포함) 실제 편집이 아니므로 자동 저장을 건너뛴다.
+  const lastQueuedPixelsRef = useRef(pixels)
+  const [saveStatus, setSaveStatus] = useState(resumeArtwork ? 'saved' : 'idle') // 'idle' | 'pending' | 'saved'
+
   const handleTracingUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -228,13 +237,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     })
   }, [pixels])
 
-  const handleClearAll = () => {
-    setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), pixels.map(r => [...r])])
-    setFuture([])
-    setPixels(makeEmpty(gridRows, gridCols))
-    setShowClearModal(false)
-  }
-
   // 불러온 작품이 있으면 그 파일명을 기본값으로, 없으면 오늘 날짜 기반 이름을 생성
   const buildDefaultFileName = useCallback(() => {
     if (resumeArtwork?.fileName) return resumeArtwork.fileName
@@ -250,6 +252,50 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     setIsSaveModalOpen(true)
   }, [buildDefaultFileName])
 
+  // 스케치북 항목 하나의 공통 필드(제목/ID/시각 제외) — 자동 저장과 수동 저장이 함께 사용
+  const buildSketchbookEntry = useCallback(() => ({
+    userName,
+    pixels,
+    dataUrl: getDataURL(),
+    cols: gridCols,
+    rows: gridRows,
+    ratio,
+    orientation,
+  }), [userName, pixels, getDataURL, gridCols, gridRows, ratio, orientation])
+
+  const handleClearAll = () => {
+    // 1단계: 캔버스를 비우기 직전까지 그린 그림을 디바운스 없이 즉시 스케치북에 최종 저장
+    const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
+    const idx = all.findIndex(it => it.id === projectIdRef.current)
+    const now = new Date().toISOString()
+    const finalEntry = {
+      id: projectIdRef.current,
+      fileName: currentFileNameRef.current || buildDefaultFileName(),
+      updatedAt: now,
+      ...buildSketchbookEntry(),
+    }
+    if (idx >= 0) {
+      all[idx] = { ...all[idx], ...finalEntry }
+    } else {
+      all.unshift({ createdAt: now, ...finalEntry })
+    }
+    localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
+    currentFileNameRef.current = finalEntry.fileName
+    setSaveStatus('saved')
+
+    // 2단계: 지금까지의 작업은 안전하게 보존했으니, 이제부터의 자동 저장은 새 캔버스를 대상으로 하도록 새 프로젝트 ID 발급
+    projectIdRef.current = Date.now()
+    currentFileNameRef.current = null
+
+    // 3단계: 캔버스 비우기 — 빈 캔버스 자체는 자동 저장을 유발하지 않도록 참조를 미리 맞춰둔다
+    setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), pixels.map(r => [...r])])
+    setFuture([])
+    const emptyGrid = makeEmpty(gridRows, gridCols)
+    lastQueuedPixelsRef.current = emptyGrid
+    setPixels(emptyGrid)
+    setShowClearModal(false)
+  }
+
   const handleConfirmSavePNG = useCallback(() => {
     const name = saveFileName.trim() || buildDefaultFileName()
     const a = document.createElement('a')
@@ -262,47 +308,57 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
     const existingIdx = all.findIndex(it => it.userName === userName && it.fileName === name)
     const now = new Date().toISOString()
-    const entry = {
-      userName,
-      fileName: name,
-      pixels,
-      dataUrl: getDataURL(),
-      cols: gridCols,
-      rows: gridRows,
-      ratio,
-      orientation,
-      updatedAt: now,
-    }
+    const entryId = existingIdx >= 0 ? all[existingIdx].id : Date.now()
+    const entry = { id: entryId, fileName: name, updatedAt: now, ...buildSketchbookEntry() }
     if (existingIdx >= 0) {
       all[existingIdx] = { ...all[existingIdx], ...entry }
       showToast(`'${name}'에 덮어썼어요!`)
     } else {
-      all.unshift({ id: Date.now(), createdAt: now, ...entry })
+      all.unshift({ createdAt: now, ...entry })
       showToast('PNG로 저장했어요!')
     }
     localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
 
-    setIsSaveModalOpen(false)
-  }, [saveFileName, buildDefaultFileName, getDataURL, userName, pixels, gridCols, gridRows, ratio, orientation])
+    // 이후 자동 저장이 지금 저장한 이 항목을 계속 덮어쓰도록 세션의 저장 대상을 갱신
+    projectIdRef.current = entryId
+    currentFileNameRef.current = name
+    setSaveStatus('saved')
 
-  const handleSaveSketchbook = () => {
-    const dataUrl = getDataURL()
-    const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
-    all.unshift({
-      id: Date.now(),
-      userName,
-      fileName: buildDefaultFileName(),
-      pixels,
-      dataUrl,
-      cols: gridCols,
-      rows: gridRows,
-      ratio,
-      orientation,
-      createdAt: new Date().toISOString(),
-    })
-    localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
+    setIsSaveModalOpen(false)
+  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getDataURL, userName, pixels, gridCols, gridRows])
+
+  // 실시간 자동 저장: 그림이 바뀔 때마다 500ms 디바운스 후 현재 프로젝트 ID로 스케치북에 덮어쓴다.
+  // pixels 참조가 마지막 예약 시점과 같으면(최초 마운트, StrictMode 이중 실행 등) 실제 편집이 아니므로 건너뛴다.
+  useEffect(() => {
+    if (pixels === lastQueuedPixelsRef.current) return
+    lastQueuedPixelsRef.current = pixels
+    setSaveStatus('pending')
+    const timer = setTimeout(() => {
+      const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
+      const idx = all.findIndex(it => it.id === projectIdRef.current)
+      const now = new Date().toISOString()
+      const entry = {
+        id: projectIdRef.current,
+        fileName: currentFileNameRef.current || buildDefaultFileName(),
+        updatedAt: now,
+        ...buildSketchbookEntry(),
+      }
+      if (idx >= 0) {
+        all[idx] = { ...all[idx], ...entry }
+      } else {
+        all.unshift({ createdAt: now, ...entry })
+      }
+      localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
+      currentFileNameRef.current = entry.fileName
+      setSaveStatus('saved')
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [pixels]) // eslint-disable-line react-hooks/exhaustive-deps -- buildSketchbookEntry가 매번 최신 pixels를 담아 재생성되므로 안전
+
+  // 실시간 자동 저장이 이미 현재 작업을 스케치북에 최신 상태로 반영하고 있으므로
+  // 목록을 여는 것 외에 별도로 저장을 유발하지 않는다.
+  const handleOpenSketchbook = () => {
     setShowSketchbook(true)
-    showToast('스케치북에 저장했어요!')
   }
 
   const handleShareWall = async () => {
@@ -376,6 +432,19 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             <HeaderBtn onClick={() => setShowBackModal(true)} title="이전 단계">←</HeaderBtn>
           </div>
 
+          {/* 자동 저장 상태 */}
+          <div className="flex items-center justify-center shrink-0 px-2">
+            <span
+              className="text-sm font-medium whitespace-nowrap transition-all duration-300"
+              style={{
+                color: saveStatus === 'pending' ? '#fde68a' : '#86efac',
+                opacity: saveStatus === 'idle' ? 0 : 1,
+              }}
+            >
+              {saveStatus === 'pending' ? '● 저장 중...' : '✓ 스케치북에 자동 저장됨'}
+            </span>
+          </div>
+
           {/* Edit controls */}
           <div className="flex items-center gap-2 shrink-0">
             <HeaderBtn onClick={handleUndo} disabled={!canUndo} title="되돌리기">
@@ -403,7 +472,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             <HeaderBtn onClick={openSaveModal} title="PNG 저장">
               <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
             </HeaderBtn>
-            <HeaderBtn onClick={handleSaveSketchbook} title="나의 스케치북">
+            <HeaderBtn onClick={handleOpenSketchbook} title="나의 스케치북">
               <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
             </HeaderBtn>
             <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">
