@@ -107,10 +107,11 @@ export default function EntryPage({ onNext, onGoToGallery }) {
           />
 
           <h1
-            className="font-pixel-en leading-[1.4] select-none"
+            className="font-pixel-en flex justify-center whitespace-nowrap leading-[1.4] select-none"
             style={{
-              fontSize: 'clamp(2.2rem, 5.6vw, 4rem)',
+              fontSize: 'clamp(1.6rem, 9vw, 4rem)',
               letterSpacing: '0.02em',
+              gap: '0.35em',
               color: ACCENT_YELLOW,
               textShadow: `
                 1px 1px 0 #dcae55,
@@ -124,8 +125,8 @@ export default function EntryPage({ onNext, onGoToGallery }) {
               `,
             }}
           >
-            <span className="block">PIXEL</span>
-            <span className="block">ART</span>
+            <span>PIXEL</span>
+            <span>ART</span>
           </h1>
 
           <PixelBoardPreview />
