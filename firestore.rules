@@ -57,9 +57,11 @@ service cloud.firestore {
         request.resource.data.classId == resource.data.classId &&
         request.resource.data.studentId == resource.data.studentId;
 
-      // ⚠️ 기존 갤러리 삭제 기능은 서버 검증 없이(로컬 저장 ID 기반) 동작 중이라 그대로 열어둠 —
-      // 이번 프롬프트 A/B 범위 밖의 기존 이슈. 별도로 다루는 걸 권장.
-      allow delete: if true;
+      // 개인 모드(classId==null) 작품의 삭제는 서버 검증 없이(로컬 저장 ID 기반) 동작 중이라
+      // 그대로 열어둠 — 이번 프롬프트 범위 밖의 기존 이슈. 별도로 다루는 걸 권장.
+      // 학급 모드 작품은 이제 deleteClassArtwork Cloud Function(관리 코드 검증)에서만 지울 수
+      // 있다 — 그 학급의 관리 코드를 아는 "진짜 선생님"만 지울 수 있어야 하기 때문.
+      allow delete: if resource.data.classId == null;
     }
 
     match /wall/{postId} {

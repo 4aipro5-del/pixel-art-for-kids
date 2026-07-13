@@ -97,6 +97,11 @@ canvas {
   #doan-print-area,
   #doan-print-area * { visibility: visible; }
 
+  /* 도안(DoanView) 전용이 아닌 다른 인쇄 화면(교사 학급 만들기/관리 대시보드의 참여 코드·
+     로그인 카드 인쇄 등)도 이 allowlist에 포함시켜야 위 body * 규칙에 가려지지 않는다. */
+  .app-print-area,
+  .app-print-area * { visibility: visible; }
+
   /* 인쇄 전용 헤더 표시 */
   .doan-print-header { display: block !important; }
 

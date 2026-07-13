@@ -204,3 +204,56 @@ export async function registerStudents(classId, manageCode, nicknames) {
     throw new Error(Object.values(RegisterStudentsError).includes(reason) ? reason : RegisterStudentsError.UNKNOWN)
   }
 }
+
+// ── 교사 관리 대시보드 (/manage/:manageCode) ──────────────────────────────
+
+export const DashboardError = {
+  INVALID_MANAGE_CODE: 'INVALID_MANAGE_CODE',
+  UNKNOWN: 'UNKNOWN',
+}
+
+// manageCode(URL 원문)를 서버로 보내 해시 대조 후에만 학급 정보를 받는다.
+// 반환되는 학생 목록에는 secretHash/salt가 전혀 없다(hasPassword로만 상태 표시).
+export async function getClassDashboard(manageCode) {
+  const call = httpsCallable(functionsInstance, 'getClassDashboard')
+  try {
+    const res = await call({ manageCode })
+    return res.data
+  } catch (err) {
+    const reason = err?.message
+    throw new Error(Object.values(DashboardError).includes(reason) ? reason : DashboardError.UNKNOWN)
+  }
+}
+
+// 해당 학급의 작품 전체(학급 모드로 저장된 것만) — artworks는 원래 갤러리 취지상
+// 공개 읽기이므로 별도 인증 없이 classId로 바로 조회한다.
+export async function getClassArtworks(classId) {
+  const q = query(
+    collection(db, 'artworks'),
+    where('classId', '==', classId),
+    orderBy('createdAt', 'desc'),
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map(doc => {
+    const data = doc.data()
+    return {
+      id: doc.id,
+      userName: data.userName,
+      studentId: data.studentId,
+      pixels: JSON.parse(data.pixelsJson || '[]'),
+      cols: data.cols,
+      rows: data.rows,
+      createdAt: data.createdAt?.toDate(),
+    }
+  })
+}
+
+export async function resetStudentPin(classId, manageCode, nickname) {
+  const call = httpsCallable(functionsInstance, 'resetStudentPin')
+  await call({ classId, manageCode, nickname })
+}
+
+export async function deleteClassArtwork(classId, manageCode, artworkId) {
+  const call = httpsCallable(functionsInstance, 'deleteClassArtwork')
+  await call({ classId, manageCode, artworkId })
+}

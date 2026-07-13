@@ -237,3 +237,102 @@ exports.joinOrLoginStudent = onCall(async (request) => {
     className,
   }
 })
+
+// 관리 코드로 학급 문서를 찾는 공통 로직 — manageCode 원문은 절대 저장되지 않으므로
+// 매번 해시를 계산해 manageCodeHash와 대조한다. 일치하는 문서가 없으면 항상
+// 동일한 에러(INVALID_MANAGE_CODE)만 반환해 어떤 부분이 틀렸는지 알려주지 않는다.
+async function findClassByManageCode(manageCode) {
+  if (typeof manageCode !== 'string' || !manageCode.trim()) return null
+  const hash = sha256Hex(manageCode.trim())
+  const snap = await db.collection('classes').where('manageCodeHash', '==', hash).limit(1).get()
+  return snap.empty ? null : snap.docs[0]
+}
+
+// ── 교사 관리 대시보드 진입 — /manage/:manageCode 에서 호출 ──────────────────
+// 브라우저가 URL에서 읽은 manageCode 원문을 그대로 보내면, 서버가 해시로 변환해
+// manageCodeHash와 대조한다. DB에는 원문이 전혀 없으므로 URL이 노출되더라도
+// "그 URL을 아는 사람만" 접근할 수 있을 뿐, DB 자체에서 원문이 새는 경로는 없다.
+// 학생 목록은 secretHash/salt를 절대 포함하지 않고 "비밀번호 설정 여부"만 내려준다.
+exports.getClassDashboard = onCall(async (request) => {
+  const { manageCode } = request.data || {}
+  const classDoc = await findClassByManageCode(manageCode)
+  if (!classDoc) {
+    throw new HttpsError('permission-denied', 'INVALID_MANAGE_CODE')
+  }
+  const classData = classDoc.data()
+
+  const studentsSnap = await classDoc.ref.collection('students').get()
+  const students = studentsSnap.docs.map(d => {
+    const s = d.data()
+    return {
+      nickname: s.nickname,
+      hasPassword: !!s.secretHash,
+      failCount: s.failCount || 0,
+      authType: s.authType || 'pin',
+    }
+  })
+
+  return {
+    classId: classDoc.id,
+    className: classData.className || '',
+    joinCode: classData.joinCode,
+    authType: classData.authType || 'pin',
+    expiresAt: classData.expiresAt ? classData.expiresAt.toMillis() : null,
+    students,
+  }
+})
+
+// ── 학생 PIN/그림 비밀번호 초기화(교사 전용) ────────────────────────────────
+// secretHash·salt를 null로 되돌리면, 그 학생이 다음에 참여할 때 joinOrLoginStudent의
+// "자리 인수받기" 분기를 다시 타서 새 비밀번호를 스스로 설정하게 된다.
+exports.resetStudentPin = onCall(async (request) => {
+  const { classId, manageCode, nickname } = request.data || {}
+  if (typeof classId !== 'string' || typeof nickname !== 'string') {
+    throw new HttpsError('invalid-argument', 'INVALID_INPUT')
+  }
+  const classRef = db.collection('classes').doc(classId)
+  const classSnap = await classRef.get()
+  if (!classSnap.exists) {
+    throw new HttpsError('not-found', 'CLASS_NOT_FOUND')
+  }
+  if (sha256Hex(manageCode || '') !== classSnap.data().manageCodeHash) {
+    throw new HttpsError('permission-denied', 'INVALID_MANAGE_CODE')
+  }
+
+  const studentRef = classRef.collection('students').doc(nickname)
+  const studentSnap = await studentRef.get()
+  if (!studentSnap.exists) {
+    throw new HttpsError('not-found', 'STUDENT_NOT_FOUND')
+  }
+  await studentRef.update({ secretHash: null, salt: null, failCount: 0 })
+  return { ok: true }
+})
+
+// ── 학급 작품 삭제(교사 전용) ──────────────────────────────────────────────
+// artworks 자체는(개인 모드 포함) 갤러리 취지상 공개 읽기·클라이언트 직접 삭제가 열려있지만,
+// classId가 있는(학급 모드) 작품은 firestore.rules에서 클라이언트 직접 삭제를 막아뒀으므로
+// "그 학급의 관리 코드를 아는 사람"만 이 함수를 통해 지울 수 있다.
+exports.deleteClassArtwork = onCall(async (request) => {
+  const { classId, manageCode, artworkId } = request.data || {}
+  if (typeof classId !== 'string' || typeof artworkId !== 'string') {
+    throw new HttpsError('invalid-argument', 'INVALID_INPUT')
+  }
+  const classSnap = await db.collection('classes').doc(classId).get()
+  if (!classSnap.exists) {
+    throw new HttpsError('not-found', 'CLASS_NOT_FOUND')
+  }
+  if (sha256Hex(manageCode || '') !== classSnap.data().manageCodeHash) {
+    throw new HttpsError('permission-denied', 'INVALID_MANAGE_CODE')
+  }
+
+  const artworkRef = db.collection('artworks').doc(artworkId)
+  const artworkSnap = await artworkRef.get()
+  if (!artworkSnap.exists) {
+    throw new HttpsError('not-found', 'ARTWORK_NOT_FOUND')
+  }
+  if (artworkSnap.data().classId !== classId) {
+    throw new HttpsError('permission-denied', 'ARTWORK_NOT_IN_CLASS')
+  }
+  await artworkRef.delete()
+  return { ok: true }
+})
