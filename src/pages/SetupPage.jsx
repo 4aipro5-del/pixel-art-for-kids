@@ -117,13 +117,13 @@ export default function SetupPage({ onNext, onGoHome }) {
                 </div>
                 <div>
                   <p className="text-[0.825rem] font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
-                  <p className="font-pixel text-[1.2375rem] text-white">
+                  <p className="font-pixel text-2xl text-white">
                     {selectedRatio.label} · {grid.cols} × {grid.rows}
                   </p>
                 </div>
               </div>
               <span
-                className="font-pixel rounded-full px-4 py-2 text-[0.9625rem] text-black"
+                className="font-pixel rounded-full px-5 py-2.5 text-lg text-black"
                 style={{ background: ACCENT_YELLOW }}
               >
                 {selectedLevel.badge}
@@ -158,11 +158,11 @@ export default function SetupPage({ onNext, onGoHome }) {
                         />
                       </div>
                       <div className="text-center">
-                        <p className="font-pixel-kr text-[1.1rem] sm:text-[1.2375rem]" style={{ color: active ? '#000000' : '#e2e8f0' }}>
+                        <p className="font-pixel-kr text-xl sm:text-2xl" style={{ color: active ? '#000000' : '#e2e8f0' }}>
                           {r.label}
                         </p>
                         <p
-                          className="hidden sm:block text-[0.825rem] mt-1 leading-snug"
+                          className="hidden sm:block text-base mt-1.5 leading-snug"
                           style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
                         >
                           {r.sublabel}
@@ -209,7 +209,7 @@ export default function SetupPage({ onNext, onGoHome }) {
               <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 픽셀 해상도
               </p>
-              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {LEVELS.map((lv, i) => {
                   const g = getGrid(ratio, orientation, i)
                   const active = levelIndex === i
@@ -217,20 +217,20 @@ export default function SetupPage({ onNext, onGoHome }) {
                     <button
                       key={lv.badge}
                       onClick={() => setLevelIndex(i)}
-                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-3 sm:px-4 rounded-2xl transition-all active:scale-[0.98]"
+                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-2xl transition-all active:scale-[0.98]"
                       style={{ background: active ? ACCENT_YELLOW : PANEL_BG }}
                     >
                       {/* 미니 픽셀 그리드 */}
                       <MiniGrid count={lv.dotCount} size={lv.dotSize} active={active} />
 
                       {/* 격자 크기 */}
-                      <p className="font-pixel text-[1.2375rem] sm:text-[1.375rem] tabular-nums" style={{ color: active ? '#000000' : '#e2e8f0' }}>
+                      <p className="font-pixel whitespace-nowrap text-xl sm:text-3xl tabular-nums" style={{ color: active ? '#000000' : '#e2e8f0' }}>
                         {g.cols} × {g.rows}
                       </p>
 
                       {/* 난이도 뱃지 */}
                       <span
-                        className="font-pixel text-[11px] sm:text-[0.825rem] px-3 py-1 rounded-full"
+                        className="font-pixel text-sm sm:text-base px-3.5 py-1.5 rounded-full"
                         style={{
                           background: active ? 'rgba(0,0,0,0.15)' : 'transparent',
                           color: active ? '#000000' : ACCENT_YELLOW,
@@ -241,7 +241,7 @@ export default function SetupPage({ onNext, onGoHome }) {
                       </span>
 
                       <p
-                        className="hidden sm:block text-[0.825rem] text-center leading-snug"
+                        className="hidden sm:block text-base text-center leading-snug"
                         style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
                       >
                         {lv.desc}

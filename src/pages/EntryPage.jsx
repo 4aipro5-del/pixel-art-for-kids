@@ -99,7 +99,7 @@ export default function EntryPage({ onNext, onGoToGallery }) {
           <img
             src="/images/logo.png"
             alt="오늘의 그림"
-            width={418}
+            width={463}
             height={120}
             loading="eager"
             decoding="async"

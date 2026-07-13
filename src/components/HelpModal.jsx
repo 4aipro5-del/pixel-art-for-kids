@@ -33,28 +33,10 @@ export default function HelpModal({ onClose }) {
         style={{ background: PAGE_BG, border: '1px solid rgba(255,255,255,0.08)' }}
       >
         {/* Header */}
-        <div className="relative flex items-center justify-center px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <h2 className="font-pixel text-lg flex items-center justify-center gap-2" style={{ color: ACCENT_YELLOW }}>
-            <span
-              aria-hidden="true"
-              className="w-5 h-5"
-              style={{
-                background: ACCENT_YELLOW,
-                WebkitMaskImage: 'url(/images/question.png)',
-                maskImage: 'url(/images/question.png)',
-                WebkitMaskSize: 'contain',
-                maskSize: 'contain',
-                WebkitMaskRepeat: 'no-repeat',
-                maskRepeat: 'no-repeat',
-                WebkitMaskPosition: 'center',
-                maskPosition: 'center',
-              }}
-            />
-            사용법 안내
-          </h2>
+        <div className="flex items-center justify-end px-6 pt-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="absolute right-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-white transition-colors"
             style={{ background: PANEL_BG }}
           >
             ✕
@@ -62,7 +44,7 @@ export default function HelpModal({ onClose }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 pt-0 pb-5 flex flex-col gap-5">
 
           <div className="flex flex-col gap-3">
             <p className="font-pixel text-lg font-bold tracking-tight" style={{ color: '#9ca3af' }}>

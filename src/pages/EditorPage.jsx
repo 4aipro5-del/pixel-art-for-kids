@@ -79,7 +79,6 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
         ref={btnRef}
         onClick={onClick}
         disabled={disabled}
-        title={title}
         aria-label={title}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
@@ -414,7 +413,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
 
           {/* Brand + 처음 화면으로 */}
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-pixel text-2xl tracking-tight whitespace-nowrap" style={{ color: ACCENT_YELLOW }}>PIXEL ART</span>
+            <span className="font-pixel text-2xl tracking-tight whitespace-nowrap inline-block leading-none" style={{ color: ACCENT_YELLOW, transform: 'translateY(0.3em)' }}>PIXEL ART</span>
             <HeaderBtn onClick={() => setShowBackModal(true)} title="처음 화면으로" size="lg">
               <img src="/images/home.png" alt="처음 화면으로" className="w-6 h-6 invert" />
             </HeaderBtn>
