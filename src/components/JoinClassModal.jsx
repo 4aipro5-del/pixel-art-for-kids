@@ -1,16 +1,20 @@
 import { useRef, useState } from 'react'
-import { joinClass, JoinClassError } from '../firebase'
+import { joinOrLoginStudent, JoinClassError } from '../firebase'
 
 const ACCENT_YELLOW = '#f7d070'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
 const WARNING_RED = '#fca5a5'
 
+// 신규 별명이면 등록, 이미 있는 별명이면 PIN을 대조해 로그인 — 서버(joinOrLoginStudent)가
+// 한 번에 판단하므로 여기선 "이미 사용 중"과 "비밀번호가 다름"을 구분하지 않고 하나의
+// 메시지로 안내한다(어느 쪽인지 알려주면 존재하는 별명을 추측하는 데 쓰일 수 있어서).
 const ERROR_MESSAGES = {
   [JoinClassError.MISSING_FIELDS]: '학급 코드와 별명을 모두 입력해주세요!',
   [JoinClassError.INVALID_PIN]: '비밀번호 4자리를 모두 입력해주세요!',
   [JoinClassError.CLASS_NOT_FOUND]: '학급 코드를 다시 확인해주세요.',
-  [JoinClassError.NICKNAME_TAKEN]: '이미 쓰고 있는 별명이에요. 다른 별명을 골라주세요!',
+  [JoinClassError.WRONG_PIN]: '비밀번호가 다르거나 이미 다른 친구가 쓰는 별명이에요. 확인 후 다시 시도해주세요!',
+  [JoinClassError.LOCKED]: '비밀번호를 너무 많이 틀렸어요. 잠시 후 다시 시도하거나 선생님께 요청해주세요.',
 }
 const DEFAULT_ERROR_MESSAGE = '문제가 발생했어요. 잠시 후 다시 시도해주세요.'
 
@@ -57,7 +61,7 @@ export default function JoinClassModal({ onClose, onJoined }) {
     const pin = pinDigits.join('')
     setLoading(true)
     try {
-      const session = await joinClass(joinCode, nickname, pin)
+      const session = await joinOrLoginStudent(joinCode, nickname, pin)
       onJoined(session)
     } catch (err) {
       setError(ERROR_MESSAGES[err.message] || DEFAULT_ERROR_MESSAGE)
