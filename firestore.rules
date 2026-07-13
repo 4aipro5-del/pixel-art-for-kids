@@ -1,0 +1,72 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────
+// classes / classes/{classId}/students — 학급·학생 관리 (프롬프트 A 반영)
+//
+// 핵심 원칙:
+// 1) 학생 개인 비밀(PIN 해시)은 클라이언트가 절대 읽을 수 없다 → students는 항상 get/list 금지.
+//    (해시라도 읽을 수 있으면 4자리 PIN은 브라우저에서 순식간에 전부 대입해볼 수 있기 때문)
+// 2) 닉네임 중복 방지는 "닉네임 = 문서 ID" 구조로 만들어, !exists() 조건이
+//    동시 요청 경쟁 상태에서도 원자적으로 중복 생성을 막게 한다.
+// 3) 학생 문서는 생성만 가능 — 수정/삭제/PIN 재검증(로그인)은 아직 지원하지 않는다.
+//    (이 기능은 Firestore 규칙만으로 안전하게 구현할 수 없어 Cloud Functions가 필요 —
+//    아래 "다음 단계" 참고)
+// ─────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /classes/{classId} {
+      // 참여 코드(joinCode)는 원래 칠판 등으로 공개 공유되는 값이라 읽기를 막을 이유가 없다.
+      // manageCodeHash도 "해시"이므로 노출돼도 원본 관리코드를 복원할 수 없다.
+      // ⚠️ 다만 이상적으로는 manageCodeHash를 별도 비공개 문서로 분리하는 편이 더 안전하다.
+      //    (프롬프트 C에서 교사 생성 흐름을 만들 때 함께 정리 권장)
+      allow get, list: if true;
+
+      // ⚠️ 임시 조치: "교사 학급 생성"(프롬프트 C)이 아직 구현되지 않아
+      // 지금은 클라이언트에서 직접 학급을 만들 수 있게 열어둔다.
+      // 프롬프트 C 배포 시 반드시 아래 줄을 "allow create: if false;"로 바꾸고,
+      // 학급 생성은 Cloud Functions(관리코드 발급·해시 저장)에서만 하도록 잠가야 한다.
+      allow create: if true;
+      allow update, delete: if false;
+
+      match /students/{nickname} {
+        // 학생 비밀 정보 보호의 핵심: 어떤 경우에도 클라이언트가 이 문서를 읽을 수 없다.
+        allow get, list: if false;
+
+        // 신규 등록(회원가입 개념)만 허용. 문서 ID가 곧 닉네임이라 이미 존재하면
+        // !exists() 조건에서 바로 막힌다 — 애플리케이션 코드의 사전 확인과 무관하게
+        // Firestore 서버가 최종적으로 중복을 보장해준다.
+        allow create: if
+          !exists(/databases/$(database)/documents/classes/$(classId)/students/$(nickname)) &&
+          request.resource.data.keys().hasOnly(['nickname', 'authType', 'secretHash', 'salt', 'failCount', 'createdAt']) &&
+          request.resource.data.nickname == nickname &&
+          request.resource.data.authType in ['pin', 'picture'] &&
+          request.resource.data.secretHash is string &&
+          request.resource.data.secretHash.size() == 64 &&
+          request.resource.data.salt is string &&
+          request.resource.data.failCount == 0;
+
+        // PIN 재검증(로그인), 교사의 PIN 초기화는 아직 미지원.
+        // "해시가 일치하면 데이터를 보여준다"는 서버 로직이 필요해 Cloud Functions 전환 후 추가한다.
+        allow update, delete: if false;
+      }
+    }
+
+    // ── 기존 컬렉션 (이번 변경과 무관 — 지금 콘솔에 있는 규칙을 그대로 유지하세요) ──
+    // 아래는 현재 앱 동작과 맞춰본 "예시"이며, 실제 콘솔에 이미 다른 조건이 있다면
+    // 이 블록으로 덮어쓰지 말고 위 classes/students 블록만 추가하세요.
+    match /artworks/{artworkId} {
+      allow get, list: if true;
+      allow create: if true;
+      allow delete: if true;
+      allow update: if false;
+    }
+
+    match /wall/{postId} {
+      allow get, list: if true;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+  }
+}

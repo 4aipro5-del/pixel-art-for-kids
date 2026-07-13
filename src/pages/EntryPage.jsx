@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import JoinClassModal from '../components/JoinClassModal'
 
 const ACCENT_YELLOW = '#f7d070'
 const PAGE_BG = '#1a1c1e'
@@ -67,9 +68,10 @@ function PixelBoardPreview() {
   )
 }
 
-export default function EntryPage({ onNext, onGoToGallery }) {
+export default function EntryPage({ onNext, onGoToGallery, onJoinClass }) {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const [showJoinModal, setShowJoinModal] = useState(false)
 
   const handleSubmit = (e) => {
     e?.preventDefault()
@@ -163,6 +165,21 @@ export default function EntryPage({ onNext, onGoToGallery }) {
             </button>
           </form>
 
+          <div className="flex w-full items-center gap-3">
+            <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+            <span className="font-pixel text-sm text-gray-500">또는</span>
+            <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+          </div>
+
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="font-pixel flex w-full items-center justify-center gap-2 rounded-2xl border px-6 py-4 text-lg text-gray-200 transition-colors hover:brightness-125"
+            style={{ background: PANEL_BG, borderColor: 'rgba(255,255,255,0.15)' }}
+          >
+            <span aria-hidden="true">🏫</span>
+            학급 코드로 참여하기
+          </button>
+
           <button
             onClick={onGoToGallery}
             className="font-pixel mt-2 flex items-center justify-center gap-2 rounded-2xl border border-black px-6 py-3 text-lg font-bold tracking-tight transition-colors hover:brightness-95"
@@ -188,6 +205,16 @@ export default function EntryPage({ onNext, onGoToGallery }) {
 
         </div>
       </main>
+
+      {showJoinModal && (
+        <JoinClassModal
+          onClose={() => setShowJoinModal(false)}
+          onJoined={(session) => {
+            setShowJoinModal(false)
+            onJoinClass(session)
+          }}
+        />
+      )}
     </div>
   )
 }
