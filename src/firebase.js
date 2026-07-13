@@ -163,3 +163,44 @@ export async function joinOrLoginStudent(joinCode, nickname, pin) {
 export async function logoutStudent() {
   try { await signOut(auth) } catch { /* 이미 로그아웃 상태 등은 무시 */ }
 }
+
+// ── 교사: 학급 생성/학생 별명 등록 (가입·로그인 없음, 관리 코드로 인증) ────────────
+
+export const CreateClassError = {
+  JOIN_CODE_GENERATION_FAILED: 'JOIN_CODE_GENERATION_FAILED',
+  UNKNOWN: 'UNKNOWN',
+}
+
+// 성공 시 { classId, joinCode, manageCode, className, authType }를 반환한다.
+// manageCode는 원문 그대로 딱 이 응답에만 담겨 오고, 서버 DB에는 해시만 남는다 —
+// 이 값을 잃어버리면 학급을 다시 관리할 방법이 없으므로 호출한 쪽에서 반드시 저장을 유도해야 한다.
+export async function createClass(className, authType) {
+  const call = httpsCallable(functionsInstance, 'createClass')
+  try {
+    const res = await call({ className, authType })
+    return res.data
+  } catch (err) {
+    const reason = err?.message
+    throw new Error(Object.values(CreateClassError).includes(reason) ? reason : CreateClassError.UNKNOWN)
+  }
+}
+
+export const RegisterStudentsError = {
+  CLASS_NOT_FOUND: 'CLASS_NOT_FOUND',
+  INVALID_MANAGE_CODE: 'INVALID_MANAGE_CODE',
+  NO_NICKNAMES: 'NO_NICKNAMES',
+  UNKNOWN: 'UNKNOWN',
+}
+
+// nicknames: string[] — 반환값 results: [{ requested, final, renamed }] (중복이라 이름이
+// 바뀐 경우 renamed=true로 표시되어 화면에서 "OO는 중복이라 OO2로 등록됐어요" 안내 가능).
+export async function registerStudents(classId, manageCode, nicknames) {
+  const call = httpsCallable(functionsInstance, 'registerStudents')
+  try {
+    const res = await call({ classId, manageCode, nicknames })
+    return res.data.results
+  } catch (err) {
+    const reason = err?.message
+    throw new Error(Object.values(RegisterStudentsError).includes(reason) ? reason : RegisterStudentsError.UNKNOWN)
+  }
+}

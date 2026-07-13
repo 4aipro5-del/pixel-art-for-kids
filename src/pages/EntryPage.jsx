@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import JoinClassModal from '../components/JoinClassModal'
 
 const ACCENT_YELLOW = '#f7d070'
@@ -68,10 +68,21 @@ function PixelBoardPreview() {
   )
 }
 
-export default function EntryPage({ onNext, onGoToGallery, onJoinClass }) {
+export default function EntryPage({ onNext, onGoToGallery, onJoinClass, onGoToTeacherCreate }) {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [showJoinModal, setShowJoinModal] = useState(false)
+  const [prefilledJoinCode, setPrefilledJoinCode] = useState('')
+
+  // QR로 참여 코드를 스캔하면 "?join=코드"로 들어온다 — 그 코드를 채운 참여 모달을 바로 띄운다.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('join')
+    if (code) {
+      setPrefilledJoinCode(code)
+      setShowJoinModal(true)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   const handleSubmit = (e) => {
     e?.preventDefault()
@@ -203,14 +214,25 @@ export default function EntryPage({ onNext, onGoToGallery, onJoinClass }) {
             픽셀 갤러리 가기
           </button>
 
+          {onGoToTeacherCreate && (
+            <button
+              onClick={onGoToTeacherCreate}
+              className="font-pixel mt-1 text-sm text-gray-500 hover:text-gray-300 transition-colors underline"
+            >
+              선생님이신가요? 학급 만들기
+            </button>
+          )}
+
         </div>
       </main>
 
       {showJoinModal && (
         <JoinClassModal
-          onClose={() => setShowJoinModal(false)}
+          initialCode={prefilledJoinCode}
+          onClose={() => { setShowJoinModal(false); setPrefilledJoinCode('') }}
           onJoined={(session) => {
             setShowJoinModal(false)
+            setPrefilledJoinCode('')
             onJoinClass(session)
           }}
         />

@@ -18,8 +18,8 @@ const ERROR_MESSAGES = {
 }
 const DEFAULT_ERROR_MESSAGE = '문제가 발생했어요. 잠시 후 다시 시도해주세요.'
 
-export default function JoinClassModal({ onClose, onJoined }) {
-  const [joinCode, setJoinCode] = useState('')
+export default function JoinClassModal({ onClose, onJoined, initialCode = '' }) {
+  const [joinCode, setJoinCode] = useState(initialCode)
   const [nickname, setNickname] = useState('')
   const [pinDigits, setPinDigits] = useState(['', '', '', ''])
   const [error, setError] = useState('')
@@ -101,7 +101,7 @@ export default function JoinClassModal({ onClose, onJoined }) {
               value={joinCode}
               onChange={e => { setJoinCode(e.target.value); setError('') }}
               placeholder="바다-여우-17"
-              autoFocus
+              autoFocus={!initialCode}
               className="font-pixel w-full rounded-xl px-4 py-3 text-lg text-white outline-none placeholder:text-gray-600"
               style={{ background: PANEL_BG }}
             />
@@ -118,6 +118,7 @@ export default function JoinClassModal({ onClose, onJoined }) {
               onChange={e => { setNickname(e.target.value); setError('') }}
               placeholder="픽셀왕민준"
               maxLength={10}
+              autoFocus={!!initialCode}
               className="font-pixel w-full rounded-xl px-4 py-3 text-lg text-white outline-none placeholder:text-gray-600"
               style={{ background: PANEL_BG }}
             />

@@ -4,6 +4,7 @@ import SetupPage from './pages/SetupPage'
 import EditorPage from './pages/EditorPage'
 import WallPage from './pages/WallPage'
 import GalleryPage from './pages/GalleryPage'
+import TeacherCreateClassPage from './pages/TeacherCreateClassPage'
 import { logoutStudent } from './firebase'
 
 // 학급 참여 세션(classId/studentId/nickname)을 저장 — 개인정보 아님, 편의용 캐시일 뿐이라
@@ -70,7 +71,11 @@ export default function App() {
             try { localStorage.setItem(CLASS_SESSION_KEY, JSON.stringify(session)) } catch {}
             navigate('setup')
           }}
+          onGoToTeacherCreate={() => navigate('teacherCreate')}
         />
+      )}
+      {page === 'teacherCreate' && (
+        <TeacherCreateClassPage onGoHome={() => navigate('entry')} />
       )}
       {page === 'setup' && (
         <SetupPage
