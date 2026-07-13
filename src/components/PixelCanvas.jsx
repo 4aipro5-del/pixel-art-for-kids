@@ -130,15 +130,43 @@ export default function PixelCanvas({
     let lastCell = null
     let strokeColor = null  // pen 색상: 스트로크 시작 시 캡처, 완료 시 recent에 등록
 
-    // Convert clientX/Y → grid cell coords
-    const hitCell = (cx, cy) => {
+    // Convert clientX/Y → grid cell coords. clamp=true면 캔버스 밖 좌표도
+    // 가장 가까운 가장자리 셀로 스냅한다 (드래그 중 커서가 캔버스 밖으로 나가도
+    // 선이 끊기지 않고 가장자리까지 자연스럽게 이어지도록).
+    const hitCell = (cx, cy, clamp = false) => {
       const rect = canvas.getBoundingClientRect()
       const cs = cellSizeRef.current
       const cols = gridColsRef.current
       const rows = gridRowsRef.current
-      const c = Math.floor((cx - rect.left) / cs)
-      const r = Math.floor((cy - rect.top) / cs)
+      let c = Math.floor((cx - rect.left) / cs)
+      let r = Math.floor((cy - rect.top) / cs)
+      if (clamp) {
+        c = Math.min(Math.max(c, 0), cols - 1)
+        r = Math.min(Math.max(r, 0), rows - 1)
+        return { r, c }
+      }
       return (r >= 0 && r < rows && c >= 0 && c < cols) ? { r, c } : null
+    }
+
+    // 두 셀 사이를 브레젠험 알고리즘으로 보간 — 빠른 드래그로 mousemove 이벤트가
+    // 듬성듬성 발생해도 시작점과 끝점 사이 모든 칸을 빠짐없이 채워 선이 끊기지 않게 한다.
+    const bresenhamLine = (r0, c0, r1, c1) => {
+      const points = []
+      const dr = Math.abs(r1 - r0)
+      const dc = Math.abs(c1 - c0)
+      const sr = r0 < r1 ? 1 : -1
+      const sc = c0 < c1 ? 1 : -1
+      let err = dr - dc
+      let r = r0
+      let c = c0
+      while (true) {
+        points.push({ r, c })
+        if (r === r1 && c === c1) break
+        const e2 = 2 * err
+        if (e2 > -dc) { err -= dc; r += sr }
+        if (e2 < dr) { err += dr; c += sc }
+      }
+      return points
     }
 
     // Read actual rendered HEX from canvas pixel data (cell center)
@@ -177,7 +205,7 @@ export default function PixelCanvas({
       })
     }
 
-    // ── mousedown / touchstart ─────────────────────────────────────────
+    // ── pointerdown ───────────────────────────────────────────────────
     const onDown = (cx, cy) => {
       const cell = hitCell(cx, cy)
       if (!cell) return
@@ -202,17 +230,24 @@ export default function PixelCanvas({
       paint(cell)
     }
 
-    // ── mousemove / touchmove ──────────────────────────────────────────
+    // ── pointermove ──────────────────────────────────────────────────
     const onMove = (cx, cy) => {
       if (!drawing) return
-      const cell = hitCell(cx, cy)
-      if (!cell) return
+      // 드래그 중에는 클램프된 좌표를 사용 — 커서가 캔버스 밖으로 나가도
+      // 가장 가까운 가장자리 칸까지 선이 계속 이어진다.
+      const cell = hitCell(cx, cy, true)
       if (lastCell && lastCell.r === cell.r && lastCell.c === cell.c) return
+      if (lastCell) {
+        // 시작점과 끝점 사이를 보간해 빠짐없이 채운다 (첫 점은 이미 칠해졌으므로 제외)
+        const line = bresenhamLine(lastCell.r, lastCell.c, cell.r, cell.c)
+        for (let i = 1; i < line.length; i++) paint(line[i])
+      } else {
+        paint(cell)
+      }
       lastCell = cell
-      paint(cell)
     }
 
-    // ── mouseup / touchend / mouseleave ───────────────────────────────
+    // ── pointerup / pointercancel ───────────────────────────────────────
     const onUp = () => {
       if (!drawing) return
       drawing = false
@@ -225,27 +260,30 @@ export default function PixelCanvas({
       }
     }
 
-    const md = e => onDown(e.clientX, e.clientY)
-    const mm = e => onMove(e.clientX, e.clientY)
-    const ts = e => { e.preventDefault(); onDown(e.touches[0].clientX, e.touches[0].clientY) }
-    const tm = e => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY) }
+    // Pointer Events + setPointerCapture: 마우스/터치/펜을 하나의 경로로 통합하고,
+    // 캔버스 바깥으로 드래그가 나가거나 브라우저 밖에서 버튼을 놓아도 이 엘리먼트가
+    // 계속 이벤트를 받도록 강제해 드래그 상태가 꼬이지 않게 한다.
+    const onPointerDown = e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      canvas.setPointerCapture(e.pointerId)
+      onDown(e.clientX, e.clientY)
+    }
+    const onPointerMove = e => onMove(e.clientX, e.clientY)
+    const onPointerUp = e => {
+      onUp()
+      if (canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId)
+    }
 
-    canvas.addEventListener('mousedown', md)
-    canvas.addEventListener('mousemove', mm)
-    canvas.addEventListener('mouseup', onUp)
-    canvas.addEventListener('mouseleave', onUp)
-    canvas.addEventListener('touchstart', ts, { passive: false })
-    canvas.addEventListener('touchmove', tm, { passive: false })
-    canvas.addEventListener('touchend', onUp)
+    canvas.addEventListener('pointerdown', onPointerDown)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', onPointerUp)
+    canvas.addEventListener('pointercancel', onPointerUp)
 
     return () => {
-      canvas.removeEventListener('mousedown', md)
-      canvas.removeEventListener('mousemove', mm)
-      canvas.removeEventListener('mouseup', onUp)
-      canvas.removeEventListener('mouseleave', onUp)
-      canvas.removeEventListener('touchstart', ts)
-      canvas.removeEventListener('touchmove', tm)
-      canvas.removeEventListener('touchend', onUp)
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('pointercancel', onPointerUp)
     }
   }, []) // ← 의도적 빈 deps: 모든 값을 ref로 읽으므로 재등록 불필요
 

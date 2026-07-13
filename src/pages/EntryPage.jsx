@@ -165,7 +165,7 @@ export default function EntryPage({ onNext, onGoToGallery }) {
 
           <button
             onClick={onGoToGallery}
-            className="font-pixel mt-2 flex items-center justify-center gap-2 rounded-md border border-black px-6 py-3 text-lg font-bold tracking-tight transition-colors hover:brightness-95"
+            className="font-pixel mt-2 flex items-center justify-center gap-2 rounded-2xl border border-black px-6 py-3 text-lg font-bold tracking-tight transition-colors hover:brightness-95"
             style={{ background: '#ffffff', color: '#000000' }}
           >
             <span

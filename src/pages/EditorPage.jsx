@@ -88,7 +88,7 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
       </button>
       {tooltipPos && createPortal(
         <span
-          className="font-pixel pointer-events-none fixed z-[999] -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-[10px] text-white"
+          className="font-pixel-kr pointer-events-none fixed z-[999] -translate-x-1/2 whitespace-nowrap rounded-md px-2 py-1 text-[10px] text-white"
           style={{ top: tooltipPos.top, left: tooltipPos.left, background: '#000000' }}
         >
           {title}
