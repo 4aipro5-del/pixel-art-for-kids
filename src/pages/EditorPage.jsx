@@ -145,8 +145,16 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
       e.target.value = ''
       return
     }
+    // 도안이 깔리기 직전 상태(그림+밑그림)를 강제로 되돌리기 지점에 밀어 넣는다 —
+    // 도안이 적용되는 즉시 [되돌리기]가 활성화되고, 누르면 도안이 들어오기 전으로 깨끗이 복원된다.
+    const beforePixels = pixels.map(r => [...r])
+    const beforeTracingImage = tracingImage
     const reader = new FileReader()
-    reader.onload = (ev) => setTracingImage(ev.target.result)
+    reader.onload = (ev) => {
+      setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), { pixels: beforePixels, tracingImage: beforeTracingImage }])
+      setFuture([])
+      setTracingImage(ev.target.result)
+    }
     reader.readAsDataURL(file)
     e.target.value = ''
   }
@@ -216,31 +224,35 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     return off.toDataURL('image/png')
   }, [pixels, gridCols, gridRows])
 
+  // 히스토리/미래 스택의 각 항목은 { pixels, tracingImage } 형태 — 그림뿐 아니라 밑그림
+  // 유무도 함께 스냅샷해야, 도안을 불러온 뒤 되돌리기를 눌렀을 때 밑그림까지 깨끗이 사라진다.
   const handleCommit = useCallback((newPixels) => {
-    setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), pixels.map(r => [...r])])
+    setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), { pixels: pixels.map(r => [...r]), tracingImage }])
     setFuture([])
     setPixels(newPixels)
-  }, [pixels])
+  }, [pixels, tracingImage])
 
   const handleUndo = useCallback(() => {
     setHistory(prev => {
       if (!prev.length) return prev
       const restored = prev[prev.length - 1]
-      setFuture(f => [pixels.map(r => [...r]), ...f])
-      setPixels(restored)
+      setFuture(f => [{ pixels: pixels.map(r => [...r]), tracingImage }, ...f])
+      setPixels(restored.pixels)
+      setTracingImage(restored.tracingImage)
       return prev.slice(0, -1)
     })
-  }, [pixels])
+  }, [pixels, tracingImage])
 
   const handleRedo = useCallback(() => {
     setFuture(prev => {
       if (!prev.length) return prev
       const restored = prev[0]
-      setHistory(h => [...h.slice(-(MAX_HISTORY - 1)), pixels.map(r => [...r])])
-      setPixels(restored)
+      setHistory(h => [...h.slice(-(MAX_HISTORY - 1)), { pixels: pixels.map(r => [...r]), tracingImage }])
+      setPixels(restored.pixels)
+      setTracingImage(restored.tracingImage)
       return prev.slice(1)
     })
-  }, [pixels])
+  }, [pixels, tracingImage])
 
   // 불러온 작품이 있으면 그 파일명을 기본값으로, 없으면 오늘 날짜 기반 이름을 생성
   const buildDefaultFileName = useCallback(() => {
@@ -310,7 +322,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     }
 
     // 공통 2단계: 캔버스 비우기 — 빈 캔버스 자체는 자동 저장을 유발하지 않도록 참조를 미리 맞춰둔다
-    setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), pixels.map(r => [...r])])
+    setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), { pixels: pixels.map(r => [...r]), tracingImage }])
     setFuture([])
     const emptyGrid = makeEmpty(gridRows, gridCols)
     lastQueuedPixelsRef.current = emptyGrid
