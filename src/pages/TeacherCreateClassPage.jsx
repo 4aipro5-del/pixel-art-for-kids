@@ -135,7 +135,7 @@ export default function TeacherCreateClassPage({ onGoHome }) {
 
       {/* 인쇄 시에는 참여 코드만 크게 보이도록 — 화면에는 숨김 */}
       {created && (
-        <div className="app-print-area hidden print:flex print:flex-col print:items-center print:gap-6 print:p-16">
+        <div className="app-print-area hidden print:flex print:flex-col print:items-center print:gap-6 print:p-[20mm]">
           <p className="text-2xl font-bold">{created.className || '우리 반'} 참여 코드</p>
           <p className="text-7xl font-mono font-bold tracking-widest">{created.joinCode}</p>
           {qrDataUrl && <img src={qrDataUrl} alt="QR" className="w-56 h-56" />}

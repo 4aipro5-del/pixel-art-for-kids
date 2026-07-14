@@ -91,6 +91,27 @@ canvas {
 .doan-print-header { display: none; }
 
 @media print {
+  /* 브라우저가 종이 상하단에 자동으로 붙이는 날짜/제목/URL 헤더·푸터는
+     페이지 여백(margin) 안에 그려진다. margin을 0으로 없애면 그 공간이
+     사라져 헤더·푸터가 함께 사라진다. 대신 내용이 종이 끝에 바로 붙지
+     않도록 각 인쇄 컨테이너(#doan-print-area, .app-print-area)에 자체
+     padding을 둬서 균형을 맞춘다. */
+  @page {
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  /* visibility 전환에 transition-all이 걸려 있으면 인쇄 스냅샷 시점에
+     화면 요소(예: 자동 저장 표시 텍스트)가 잠깐 비쳐 보일 수 있다.
+     인쇄 시에는 모든 transition/animation을 강제로 끈다. */
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
   .doan-no-print { display: none !important; }
 
   body * { visibility: hidden; }

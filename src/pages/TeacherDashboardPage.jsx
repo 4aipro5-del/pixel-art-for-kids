@@ -210,7 +210,7 @@ export default function TeacherDashboardPage({ manageCode, onGoHome }) {
     <div className="relative h-screen w-screen overflow-y-auto" style={{ background: PAGE_BG }}>
 
       {/* 인쇄 전용: 로그인 안내 카드, 바둑판 배열 — 화면에는 숨김 */}
-      <div className="app-print-area hidden print:grid print:grid-cols-3 print:gap-6 print:p-8">
+      <div className="app-print-area hidden print:grid print:grid-cols-3 print:gap-6 print:p-[20mm]">
         {dashboard.students.map(s => (
           <div key={s.nickname} className="flex flex-col items-center gap-2 border border-gray-400 rounded-xl p-4 break-inside-avoid">
             <p className="text-lg font-bold">픽셀아트 로그인</p>
