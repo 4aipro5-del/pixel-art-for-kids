@@ -327,6 +327,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     const emptyGrid = makeEmpty(gridRows, gridCols)
     lastQueuedPixelsRef.current = emptyGrid
     setPixels(emptyGrid)
+    setTracingImage(null) // 전체 지우기 시 밑그림도 함께 제거 — 위 history에 이미 남겨뒀으니 되돌리기로 복원 가능
     setShowClearModal(false)
   }
 
@@ -654,6 +655,32 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
                   onChange={e => setSelectedColor(e.target.value)}
                   className="absolute inset-0 opacity-0 cursor-pointer w-full"
                 />
+              </div>
+            </div>
+
+            {/* 원본 그림 — 캔버스에는 옅게 깔리는 밑그림의 "원본"을 있는 그대로 작게 보여줘서,
+                정확한 색상·형태를 직관적으로 참고하며 색칠할 수 있게 한다. 전체 지우기·되돌리기로
+                밑그림이 사라지면(tracingImage → null) 이 박스도 자동으로 안내 문구로 돌아간다. */}
+            <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
+              <SectionLabel>원본 그림</SectionLabel>
+              <div
+                className="w-full aspect-square rounded-xl overflow-hidden flex items-center justify-center"
+                style={{
+                  background: tracingImage ? '#ffffff' : PAGE_BG,
+                  border: tracingImage ? 'none' : '1px dashed rgba(255,255,255,0.15)',
+                }}
+              >
+                {tracingImage ? (
+                  <img
+                    src={tracingImage}
+                    alt="원본 그림"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <p className="text-xs text-gray-500 text-center px-4 leading-relaxed">
+                    밑그림을 불러오면<br />원본 이미지가 여기 보여요
+                  </p>
+                )}
               </div>
             </div>
 
