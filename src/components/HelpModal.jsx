@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const ACCENT_YELLOW = '#f7d070'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
@@ -13,6 +15,33 @@ function Row({ icon, wide, children }) {
         {icon}
       </div>
       <p className="text-base text-gray-300 tracking-tight leading-snug">{children}</p>
+    </div>
+  )
+}
+
+// 밑그림 가이드처럼 세부 기능이 여러 개로 늘어난 카드만 접기/펼치기로 처리 — 평소엔 한 줄
+// 요약만 보여줘서 화면이 복잡해 보이지 않고, 궁금하면 눌러서 나머지 기능을 볼 수 있게 한다.
+function ExpandableRow({ icon, summary, details }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-xl col-span-2 overflow-hidden" style={{ background: PANEL_BG }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-4 py-4 px-6 text-left"
+      >
+        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          {icon}
+        </div>
+        <p className="flex-1 text-base text-gray-300 tracking-tight leading-snug">{summary}</p>
+        <span className="text-gray-500 text-xs flex-shrink-0">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1.5 pb-4 px-6 pl-[4.5rem]">
+          {details.map((d, i) => (
+            <p key={i} className="text-sm text-gray-400 leading-snug">· {d}</p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -48,7 +77,7 @@ export default function HelpModal({ onClose }) {
 
           <div className="flex flex-col gap-3">
             <p className="font-pixel text-lg font-bold tracking-tight" style={{ color: '#9ca3af' }}>
-              저장 기능
+              그리기 기능
             </p>
 
             <div className="grid grid-cols-2 gap-3">
@@ -61,12 +90,23 @@ export default function HelpModal({ onClose }) {
                 문구가 뜨며 실시간으로 보관돼요!
               </Row>
 
+              <ExpandableRow
+                icon={<Icon src="/images/tracing.png" alt="밑그림 불러오기" />}
+                summary="원하는 그림이나 사진을 불러와 밑그림으로 두고 따라 그릴 수 있어요."
+                details={[
+                  '사이드바에서 크기를 조절할 수 있어요.',
+                  <>
+                    눈 버튼(
+                    <img src="/images/eye.png" alt="보이기" className="inline-block w-4 h-4 mx-0.5 invert align-text-bottom" />
+                    : 보이기), (
+                    <img src="/images/hide.png" alt="숨기기" className="inline-block w-4 h-4 mx-0.5 invert align-text-bottom" />
+                    : 숨기기)으로 밑그림을 보이거나 숨길 수 있어요.
+                  </>,
+                ]}
+              />
+
               <Row icon={<Icon src="/images/photo.png" alt="나의 스케치북" />}>
                 내가 그린 작품들을 모아 보는 보관함을 열어요.
-              </Row>
-
-              <Row icon={<Icon src="/images/tracing.png" alt="밑그림 불러오기" />}>
-                사진을 배경에 흐리게 깔아 따라 그릴 수 있어요.
               </Row>
 
               <Row icon={<Icon src="/images/downloads.png" alt="PNG 저장" />}>
@@ -85,7 +125,7 @@ export default function HelpModal({ onClose }) {
             </p>
 
             <Row icon={<Icon src="/images/home.png" alt="처음 화면으로" />}>
-              새 그림을 그리도록 처음 화면으로 돌아가요.{' '}
+              캔버스 설정을 변경할 수 있도록 이전 화면으로 돌아가요.{' '}
               <span style={{ color: '#9ca3af' }}>(그린 그림은 자동 저장되니 걱정 마세요!)</span>
             </Row>
           </div>

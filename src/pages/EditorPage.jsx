@@ -120,6 +120,8 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   const [toast, setToast] = useState(null)
   const [tracingImage, setTracingImage] = useState(null)
   const [tracingOpacity, setTracingOpacity] = useState(0.25)
+  const [tracingScale, setTracingScale] = useState(1) // 밑그림 크기 조절 슬라이더 — 1 = 100%
+  const [tracingVisible, setTracingVisible] = useState(true) // 눈동자 토글 — 잠시 숨기기(불투명도만 0으로, 크기값은 보존)
   const toastTimer = useRef(null)
   const prevToolRef = useRef('pen')  // eyedrop 취소 시 이전 도구 복원용
   const headerTracingInputRef = useRef(null)
@@ -140,8 +142,8 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   const handleTracingUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.type !== 'image/png') {
-      alert('PNG 파일만 업로드할 수 있어요!')
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      alert('PNG 또는 JPG 파일만 업로드할 수 있어요!')
       e.target.value = ''
       return
     }
@@ -158,6 +160,15 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     reader.readAsDataURL(file)
     e.target.value = ''
   }
+
+  // 밑그림이 사라지면(전체 지우기·되돌리기·다시하기로 tracingImage → null이 되는 모든 경로 포함)
+  // 크기 슬라이더와 보이기/숨기기 상태도 함께 기본값(100%, 보이기)으로 리셋한다.
+  useEffect(() => {
+    if (!tracingImage) {
+      setTracingScale(1)
+      setTracingVisible(true)
+    }
+  }, [tracingImage])
 
   const showToast = (msg) => {
     setToast(msg)
@@ -510,7 +521,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             <input
               ref={headerTracingInputRef}
               type="file"
-              accept="image/png"
+              accept="image/png, image/jpeg"
               className="hidden"
               onChange={handleTracingUpload}
             />
@@ -662,7 +673,54 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
                 정확한 색상·형태를 직관적으로 참고하며 색칠할 수 있게 한다. 전체 지우기·되돌리기로
                 밑그림이 사라지면(tracingImage → null) 이 박스도 자동으로 안내 문구로 돌아간다. */}
             <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
-              <SectionLabel>원본 그림</SectionLabel>
+              {/* 밑그림 크기 조절 슬라이더 — 아이들이 눈으로 보면서 캔버스 위 밑그림 크기를
+                  직접 맞출 수 있게 한다. 기본 100%, 밑그림이 없으면 조작 자체를 막아둔다.
+                  옆의 눈동자 버튼으로 잠시 숨기면(불투명도만 0) 슬라이더도 함께 비활성화되지만,
+                  크기값 자체는 그대로 남아 있다가 다시 보이기를 누르면 그 크기로 복귀한다. */}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-400">밑그림 크기</span>
+                <span className="text-xs font-bold" style={{ color: ACCENT_YELLOW }}>
+                  {Math.round(tracingScale * 100)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={50}
+                  max={300}
+                  step={5}
+                  value={Math.round(tracingScale * 100)}
+                  onChange={e => setTracingScale(Number(e.target.value) / 100)}
+                  disabled={!tracingImage || !tracingVisible}
+                  className="flex-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                  style={{ accentColor: ACCENT_YELLOW }}
+                />
+                <button
+                  onClick={() => setTracingVisible(v => !v)}
+                  disabled={!tracingImage}
+                  aria-label={tracingVisible ? '밑그림 숨기기' : '밑그림 보이기'}
+                  title={tracingVisible ? '밑그림 숨기기' : '밑그림 보이기'}
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: PAGE_BG, border: `1px solid ${tracingVisible ? 'rgba(255,255,255,0.15)' : ACCENT_YELLOW}` }}
+                >
+                  <img
+                    src={tracingVisible ? '/images/eye.png' : '/images/hide.png'}
+                    alt={tracingVisible ? '밑그림 숨기기' : '밑그림 보이기'}
+                    className="w-5 h-5 invert"
+                  />
+                </button>
+              </div>
+              <div className="flex justify-center mt-2 mb-3">
+                <button
+                  onClick={() => setTracingScale(1)}
+                  disabled={!tracingImage}
+                  className="font-pixel text-xs px-4 py-1.5 rounded-full transition-colors hover:brightness-125 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: PAGE_BG, color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)' }}
+                >
+                  초기화
+                </button>
+              </div>
+
               <div
                 className="w-full aspect-square rounded-xl overflow-hidden flex items-center justify-center"
                 style={{
@@ -770,7 +828,8 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
             onColorPick={handleColorPick}
             onPaintComplete={addRecentColor}
             tracingImage={tracingImage}
-            tracingOpacity={tracingOpacity}
+            tracingOpacity={tracingVisible ? tracingOpacity : 0}
+            tracingScale={tracingScale}
           />
         </div>
         </>)}
