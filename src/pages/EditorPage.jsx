@@ -1,13 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import PixelCanvas from '../components/PixelCanvas'
-import SketchbookModal from '../components/SketchbookModal'
 import HelpModal from '../components/HelpModal'
 import DoanView from '../components/DoanView'
-import { saveArtwork, updateArtwork } from '../firebase'
+import SketchbookModal from '../components/SketchbookModal'
+import copyIcon from '../assets/copy-icon.png'
 
 const MAX_HISTORY = 20
-const SKETCHBOOK_KEY = 'pixelart_sketchbook'
+const SKETCHBOOK_KEY = 'pixel_art_sketchbook'
 const ACCENT_YELLOW = '#f7d070'
 const DANGER = '#f87171'
 const PAGE_BG = '#1a1c1e'
@@ -99,7 +99,7 @@ function HeaderBtn({ onClick, disabled, children, title, variant = 'ghost', icon
   )
 }
 
-export default function EditorPage({ userName, gridCols, gridRows, ratio, orientation, resumeArtwork, classSession, onGoToGallery, onGoToSetup, onEditArtwork, onLogout }) {
+export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork, onGoToSetup, onEditArtwork }) {
   const [pixels, setPixels] = useState(() => (
     resumeArtwork?.pixels ? resumeArtwork.pixels.map(row => [...row]) : makeEmpty(gridRows, gridCols)
   ))
@@ -111,7 +111,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   const [zoom, setZoom] = useState(1)
   const [showSketchbook, setShowSketchbook] = useState(false)
   const [showBackModal, setShowBackModal] = useState(false)
-  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
@@ -131,9 +130,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   // 새로 시작한 캔버스면 이 세션 동안 고정되는 새 ID를 발급해 매번 새 항목이 쌓이지 않게 한다.
   const projectIdRef = useRef(resumeArtwork?.id ?? Date.now())
   const currentFileNameRef = useRef(resumeArtwork?.fileName || null)
-  // 학급 모드에서 자동 저장이 계속 덮어쓸 Firestore 작품 문서 ID. 이어 그리기로 들어왔으면
-  // 그 문서 ID를 그대로 물려받고, 새 캔버스면 null로 시작해 첫 자동 저장 때 새로 생성한다.
-  const classDocIdRef = useRef(classSession && resumeArtwork?.id ? resumeArtwork.id : null)
   // 마지막으로 저장을 예약한 pixels 참조 — 최초값과 동일하면(StrictMode의 개발 모드 이펙트
   // 이중 실행 포함) 실제 편집이 아니므로 자동 저장을 건너뛴다.
   const lastQueuedPixelsRef = useRef(pixels)
@@ -214,7 +210,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     }
   }
 
-  // minPx=1 → 원본 해상도(스케치북용), minPx≥512 → 업스케일(다운로드/공유용)
+  // minPx=1 → 원본 해상도, minPx≥512 → 업스케일(다운로드/공유용) data URL
   const getDataURL = useCallback((minPx = 1) => {
     const scale = minPx <= 1 ? 1 : Math.max(1, Math.ceil(minPx / Math.min(gridCols, gridRows)))
     const off = document.createElement('canvas')
@@ -234,6 +230,45 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     }
     return off.toDataURL('image/png')
   }, [pixels, gridCols, gridRows])
+
+  // 붙여넣기용 PNG Blob — 클립보드 API는 Blob(또는 Blob을 반환하는 Promise)만 받는다.
+  const getCanvasBlob = useCallback((minPx = 512) => {
+    const scale = Math.max(1, Math.ceil(minPx / Math.min(gridCols, gridRows)))
+    const off = document.createElement('canvas')
+    off.width = gridCols * scale
+    off.height = gridRows * scale
+    const ctx = off.getContext('2d')
+    ctx.imageSmoothingEnabled = false
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, off.width, off.height)
+    for (let r = 0; r < gridRows; r++) {
+      for (let c = 0; c < gridCols; c++) {
+        if (pixels[r][c]) {
+          ctx.fillStyle = pixels[r][c]
+          ctx.fillRect(c * scale, r * scale, scale, scale)
+        }
+      }
+    }
+    return new Promise(resolve => off.toBlob(resolve, 'image/png'))
+  }, [pixels, gridCols, gridRows])
+
+  // [그림 복사하기] — Safari 등에서 "사용자 클릭 안에서 동기적으로 호출"해야 하는
+  // 제약이 있어, blob을 미리 await하지 않고 Promise 그대로 ClipboardItem에 넘긴다.
+  const handleCopyImage = useCallback(async () => {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+      showToast('이 브라우저는 이미지 복사를 지원하지 않아요 😢')
+      return
+    }
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': getCanvasBlob(512) }),
+      ])
+      showToast('복사 완료! 원하는 곳에 바로 붙여넣기 하세요')
+    } catch (err) {
+      console.warn(err)
+      showToast('복사에 실패했어요. 다시 시도해주세요!')
+    }
+  }, [getCanvasBlob])
 
   // 히스토리/미래 스택의 각 항목은 { pixels, tracingImage } 형태 — 그림뿐 아니라 밑그림
   // 유무도 함께 스냅샷해야, 도안을 불러온 뒤 되돌리기를 눌렀을 때 밑그림까지 깨끗이 사라진다.
@@ -287,52 +322,39 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     dataUrl: getDataURL(),
     cols: gridCols,
     rows: gridRows,
-    ratio,
-    orientation,
-  }), [userName, pixels, getDataURL, gridCols, gridRows, ratio, orientation])
+  }), [userName, pixels, getDataURL, gridCols, gridRows])
 
-  // 학급 모드 저장: 최초 1회는 새 Firestore 문서를 만들고, 이후에는 같은 문서를 계속
-  // 업데이트(덮어쓰기)한다 — "이어 그리기"가 새 항목을 쌓지 않고 원본을 갱신하게 하는 핵심.
-  const persistClassArtwork = useCallback(async () => {
-    if (classDocIdRef.current) {
-      await updateArtwork(classDocIdRef.current, pixels, gridCols, gridRows)
-    } else {
-      classDocIdRef.current = await saveArtwork(userName, pixels, gridCols, gridRows, classSession)
+  // '현재 작업 중인 슬롯'(projectIdRef)에 upsert — 자동 저장, 전체 지우기 직전 저장,
+  // 도안 만들기 진입 시 저장이 모두 이 헬퍼를 공유한다. fileNameOverride를 주지 않으면
+  // 기존에 쓰던 이름(또는 기본 이름)을 그대로 유지한다.
+  const persistCurrentSlot = useCallback((fileNameOverride) => {
+    const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
+    const idx = all.findIndex(it => it.id === projectIdRef.current)
+    const now = new Date().toISOString()
+    const entry = {
+      id: projectIdRef.current,
+      fileName: fileNameOverride || currentFileNameRef.current || buildDefaultFileName(),
+      updatedAt: now,
+      ...buildSketchbookEntry(),
     }
-  }, [classSession, pixels, gridCols, gridRows, userName])
+    if (idx >= 0) {
+      all[idx] = { ...all[idx], ...entry }
+    } else {
+      all.unshift({ createdAt: now, ...entry })
+    }
+    localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
+    currentFileNameRef.current = entry.fileName
+    return entry
+  }, [buildSketchbookEntry, buildDefaultFileName])
 
   const handleClearAll = () => {
-    // 1단계: 캔버스를 비우기 직전까지 그린 그림을 디바운스 없이 즉시 저장
-    if (classSession) {
-      persistClassArtwork().catch(console.warn)
-      // 지금까지의 작업은 방금 저장했으니, 이제부터의 자동 저장은 새 캔버스를 위한 새 문서를 만들도록 리셋
-      classDocIdRef.current = null
-      setSaveStatus('saved')
-    } else {
-      const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
-      const idx = all.findIndex(it => it.id === projectIdRef.current)
-      const now = new Date().toISOString()
-      const finalEntry = {
-        id: projectIdRef.current,
-        fileName: currentFileNameRef.current || buildDefaultFileName(),
-        updatedAt: now,
-        ...buildSketchbookEntry(),
-      }
-      if (idx >= 0) {
-        all[idx] = { ...all[idx], ...finalEntry }
-      } else {
-        all.unshift({ createdAt: now, ...finalEntry })
-      }
-      localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
-      currentFileNameRef.current = finalEntry.fileName
-      setSaveStatus('saved')
+    // 캔버스를 비우기 직전까지 그린 그림을 디바운스 없이 즉시 저장
+    persistCurrentSlot()
+    setSaveStatus('saved')
+    // 지금까지의 작업은 안전하게 보존했으니, 이제부터의 자동 저장은 새 캔버스를 대상으로 하도록 새 프로젝트 ID 발급
+    projectIdRef.current = Date.now()
+    currentFileNameRef.current = null
 
-      // 지금까지의 작업은 안전하게 보존했으니, 이제부터의 자동 저장은 새 캔버스를 대상으로 하도록 새 프로젝트 ID 발급
-      projectIdRef.current = Date.now()
-      currentFileNameRef.current = null
-    }
-
-    // 공통 2단계: 캔버스 비우기 — 빈 캔버스 자체는 자동 저장을 유발하지 않도록 참조를 미리 맞춰둔다
     setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), { pixels: pixels.map(r => [...r]), tracingImage }])
     setFuture([])
     const emptyGrid = makeEmpty(gridRows, gridCols)
@@ -349,18 +371,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     a.download = `${name}.png`
     a.click()
 
-    if (classSession) {
-      // 학급 모드: 새 문서를 또 만들지 않고, 자동 저장과 같은 문서를 계속 갱신한다.
-      persistClassArtwork()
-        .then(() => { setSaveStatus('saved'); showToast('PNG로 저장했어요!') })
-        .catch(console.warn)
-      setIsSaveModalOpen(false)
-      return
-    }
-
-    saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
-
-    // 스케치북 목록에 이름 기준으로 저장 — 같은 이름이면 덮어쓰기(Update), 다르면 새 항목(Save As)
+    // 스케치북 목록에 이름 기준으로 저장 — 같은 이름이면 덮어쓰기(Update), 다르면 새 항목(Save As = 새 슬롯)
     const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
     const existingIdx = all.findIndex(it => it.userName === userName && it.fileName === name)
     const now = new Date().toISOString()
@@ -381,43 +392,21 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
     setSaveStatus('saved')
 
     setIsSaveModalOpen(false)
-  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getDataURL, userName, pixels, gridCols, gridRows, classSession, persistClassArtwork])
+  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getDataURL, userName])
 
-  // 실시간 자동 저장: 그림이 바뀔 때마다 500ms 디바운스 후 저장한다.
-  // 학급 모드면 Firestore 작품 문서를(최초 1회 생성, 이후 계속 업데이트), 개인 모드면
-  // 기존처럼 localStorage 스케치북을 현재 프로젝트 ID로 덮어쓴다.
-  // pixels 참조가 마지막 예약 시점과 같으면(최초 마운트, StrictMode 이중 실행 등) 실제 편집이 아니므로 건너뛴다.
+  // 실시간 자동 저장: 그림이 바뀔 때마다 500ms 디바운스 후 localStorage 스케치북을
+  // 현재 프로젝트 ID로 덮어쓴다. pixels 참조가 마지막 예약 시점과 같으면(최초 마운트,
+  // StrictMode 이중 실행 등) 실제 편집이 아니므로 건너뛴다.
   useEffect(() => {
     if (pixels === lastQueuedPixelsRef.current) return
     lastQueuedPixelsRef.current = pixels
     setSaveStatus('pending')
     const timer = setTimeout(() => {
-      if (classSession) {
-        persistClassArtwork()
-          .then(() => setSaveStatus('saved'))
-          .catch(err => { console.warn(err); setSaveStatus('idle') })
-        return
-      }
-      const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
-      const idx = all.findIndex(it => it.id === projectIdRef.current)
-      const now = new Date().toISOString()
-      const entry = {
-        id: projectIdRef.current,
-        fileName: currentFileNameRef.current || buildDefaultFileName(),
-        updatedAt: now,
-        ...buildSketchbookEntry(),
-      }
-      if (idx >= 0) {
-        all[idx] = { ...all[idx], ...entry }
-      } else {
-        all.unshift({ createdAt: now, ...entry })
-      }
-      localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
-      currentFileNameRef.current = entry.fileName
+      persistCurrentSlot()
       setSaveStatus('saved')
     }, 500)
     return () => clearTimeout(timer)
-  }, [pixels, classSession, persistClassArtwork]) // eslint-disable-line react-hooks/exhaustive-deps -- buildSketchbookEntry가 매번 최신 pixels를 담아 재생성되므로 안전
+  }, [pixels, persistCurrentSlot])
 
   // 실시간 자동 저장이 이미 현재 작업을 최신 상태로 반영하고 있으므로
   // 목록을 여는 것 외에 별도로 저장을 유발하지 않는다.
@@ -426,12 +415,8 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
   }
 
   const handleOpenDoan = () => {
-    // 도안 만들기 진입 시 작품 저장 — 학급 모드는 자동 저장과 같은 문서를 갱신, 개인 모드는 기존 그대로 새로 저장
-    if (classSession) {
-      persistClassArtwork().catch(console.warn)
-    } else {
-      saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
-    }
+    // 도안 만들기 진입 시 작품 저장 — 자동 저장과 같은 슬롯을 즉시 갱신
+    persistCurrentSlot()
     setDoanMode(true)
   }
 
@@ -525,37 +510,18 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
               className="hidden"
               onChange={handleTracingUpload}
             />
-            <HeaderBtn onClick={openSaveModal} title="PNG 저장">
-              <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
-            </HeaderBtn>
             <HeaderBtn onClick={handleOpenSketchbook} title="나의 스케치북">
               <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
             </HeaderBtn>
             <HeaderBtn onClick={handleOpenDoan} title="도안 만들기">
               <img src="/images/doan.png" alt="도안 만들기" className="w-5 h-5 invert" />
             </HeaderBtn>
-            <button
-              onClick={onGoToGallery}
-              className="font-pixel flex items-center justify-center gap-2 h-10 px-5 rounded-full text-sm transition-colors hover:brightness-125"
-              style={{ background: PANEL_BG, color: ACCENT_YELLOW, border: `1px solid ${ACCENT_YELLOW}` }}
-            >
-              <span
-                aria-hidden="true"
-                className="w-4 h-4"
-                style={{
-                  background: ACCENT_YELLOW,
-                  WebkitMaskImage: 'url(/images/search.png)',
-                  maskImage: 'url(/images/search.png)',
-                  WebkitMaskSize: 'contain',
-                  maskSize: 'contain',
-                  WebkitMaskRepeat: 'no-repeat',
-                  maskRepeat: 'no-repeat',
-                  WebkitMaskPosition: 'center',
-                  maskPosition: 'center',
-                }}
-              />
-              픽셀 아트 갤러리 가기
-            </button>
+            <HeaderBtn onClick={handleCopyImage} title="그림 복사하기">
+              <img src={copyIcon} alt="그림 복사하기" className="w-5 h-5 invert" />
+            </HeaderBtn>
+            <HeaderBtn onClick={openSaveModal} title="PNG 저장">
+              <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
+            </HeaderBtn>
           </div>
 
         </div>
@@ -769,17 +735,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
               사용법 안내
             </button>
 
-            {/* 공용 PC 대비 로그아웃 — 학급 모드에서만 표시 */}
-            {classSession && (
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                className="font-pixel flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm text-gray-400 transition-colors hover:text-red-400 hover:brightness-125"
-                style={{ background: PANEL_BG, border: '1px solid rgba(255,255,255,0.12)' }}
-              >
-                이 기기에서 내 정보 지우기 (로그아웃)
-              </button>
-            )}
-
             {/* Zoom */}
             <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
               <div className="flex items-center justify-between mb-2.5">
@@ -848,13 +803,11 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
       {showSketchbook && (
         <SketchbookModal
           userName={userName}
-          classSession={classSession}
           onClose={() => setShowSketchbook(false)}
           onEdit={(artwork) => {
             setShowSketchbook(false)
             onEditArtwork(artwork)
           }}
-          onLogout={() => { setShowSketchbook(false); setShowLogoutModal(true) }}
         />
       )}
 
@@ -924,8 +877,7 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
               <p className="font-pixel text-base text-white">크기 선택 화면으로 돌아갈까요?</p>
               <p className="text-sm text-gray-400 leading-relaxed">
                 캔버스 크기 선택 화면으로 돌아가요.<br />
-                다시 크기를 고르면 지금 그린 그림이<br />
-                사라질 수 있어요. 정말 돌아갈까요?
+                새 캔버스가 열리기 전에, 지금 그림을 복사해주세요!
               </p>
             </div>
 
@@ -944,44 +896,6 @@ export default function EditorPage({ userName, gridCols, gridRows, ratio, orient
                 style={{ background: ACCENT_YELLOW, color: '#000000' }}
               >
                 확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 로그아웃(이 기기에서 내 정보 지우기) 확인 모달 */}
-      {showLogoutModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-        >
-          <div
-            className="rounded-2xl px-8 pt-6 pb-8 flex flex-col items-center gap-6 mx-4"
-            style={{ maxWidth: 380, width: '100%', background: PANEL_BG }}
-          >
-            <div className="text-center flex flex-col gap-2">
-              <p className="font-pixel text-base text-white">이 기기에서 로그아웃할까요?</p>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                공용 컴퓨터라면 꼭 로그아웃해주세요!<br />
-                작품은 서버에 안전하게 저장되어 있어서,<br />
-                학급 코드 + 별명 + 비밀번호로 언제든 다시 들어올 수 있어요.
-              </p>
-            </div>
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 rounded-full text-sm font-semibold transition-colors active:scale-[0.97]"
-                style={{ background: 'rgba(255,255,255,0.08)', color: '#e2e8f0' }}
-              >
-                취소
-              </button>
-              <button
-                onClick={() => { setShowLogoutModal(false); onLogout?.() }}
-                className="flex-1 py-3 rounded-full text-sm font-semibold transition-colors active:scale-[0.97]"
-                style={{ background: DANGER, color: '#000000' }}
-              >
-                로그아웃
               </button>
             </div>
           </div>

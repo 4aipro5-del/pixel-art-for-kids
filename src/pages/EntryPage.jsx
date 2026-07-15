@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import JoinClassModal from '../components/JoinClassModal'
+import { useState } from 'react'
 
 const ACCENT_YELLOW = '#f7d070'
 const PAGE_BG = '#1a1c1e'
@@ -68,21 +67,9 @@ function PixelBoardPreview() {
   )
 }
 
-export default function EntryPage({ onNext, onGoToGallery, onJoinClass, onGoToTeacherCreate }) {
+export default function EntryPage({ onNext }) {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
-  const [showJoinModal, setShowJoinModal] = useState(false)
-  const [prefilledJoinCode, setPrefilledJoinCode] = useState('')
-
-  // QR로 참여 코드를 스캔하면 "?join=코드"로 들어온다 — 그 코드를 채운 참여 모달을 바로 띄운다.
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('join')
-    if (code) {
-      setPrefilledJoinCode(code)
-      setShowJoinModal(true)
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [])
 
   const handleSubmit = (e) => {
     e?.preventDefault()
@@ -176,67 +163,8 @@ export default function EntryPage({ onNext, onGoToGallery, onJoinClass, onGoToTe
             </button>
           </form>
 
-          <div className="flex w-full items-center gap-3">
-            <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-            <span className="font-pixel text-sm text-gray-500">또는</span>
-            <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-          </div>
-
-          <button
-            onClick={() => setShowJoinModal(true)}
-            className="font-pixel flex w-full items-center justify-center gap-2 rounded-2xl border px-6 py-4 text-lg text-gray-200 transition-colors hover:brightness-125"
-            style={{ background: PANEL_BG, borderColor: 'rgba(255,255,255,0.15)' }}
-          >
-            <span aria-hidden="true">🏫</span>
-            학급 코드로 참여하기
-          </button>
-
-          <button
-            onClick={onGoToGallery}
-            className="font-pixel mt-2 flex items-center justify-center gap-2 rounded-2xl border border-black px-6 py-3 text-lg font-bold tracking-tight transition-colors hover:brightness-95"
-            style={{ background: '#ffffff', color: '#000000' }}
-          >
-            <span
-              aria-hidden="true"
-              className="w-5 h-5"
-              style={{
-                background: '#000000',
-                WebkitMaskImage: 'url(/images/search.png)',
-                maskImage: 'url(/images/search.png)',
-                WebkitMaskSize: 'contain',
-                maskSize: 'contain',
-                WebkitMaskRepeat: 'no-repeat',
-                maskRepeat: 'no-repeat',
-                WebkitMaskPosition: 'center',
-                maskPosition: 'center',
-              }}
-            />
-            픽셀 갤러리 가기
-          </button>
-
-          {onGoToTeacherCreate && (
-            <button
-              onClick={onGoToTeacherCreate}
-              className="font-pixel mt-1 text-sm text-gray-500 hover:text-gray-300 transition-colors underline"
-            >
-              선생님이신가요? 학급 만들기
-            </button>
-          )}
-
         </div>
       </main>
-
-      {showJoinModal && (
-        <JoinClassModal
-          initialCode={prefilledJoinCode}
-          onClose={() => { setShowJoinModal(false); setPrefilledJoinCode('') }}
-          onJoined={(session) => {
-            setShowJoinModal(false)
-            setPrefilledJoinCode('')
-            onJoinClass(session)
-          }}
-        />
-      )}
     </div>
   )
 }

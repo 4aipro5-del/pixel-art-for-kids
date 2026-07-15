@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import copyIcon from '../assets/copy-icon.png'
 
 const ACCENT_YELLOW = '#f7d070'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
-const SAVED_GREEN = '#86efac'
 
 function Row({ icon, wide, children }) {
   return (
@@ -58,7 +58,7 @@ export default function HelpModal({ onClose }) {
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
+        className="rounded-2xl w-full max-w-6xl max-h-[85vh] flex flex-col"
         style={{ background: PAGE_BG, border: '1px solid rgba(255,255,255,0.08)' }}
       >
         {/* Header */}
@@ -83,16 +83,16 @@ export default function HelpModal({ onClose }) {
             <div className="grid grid-cols-2 gap-3">
               <Row
                 wide
-                icon={<span className="text-lg font-bold" style={{ color: SAVED_GREEN }}>✓</span>}
+                icon={<span className="text-lg font-bold" style={{ color: '#86efac' }}>✓</span>}
               >
-                따로 저장 버튼을 안 눌러도 그릴 때마다{' '}
-                <span className="font-bold" style={{ color: SAVED_GREEN }}>✓ 스케치북에 자동 저장됨</span>{' '}
-                문구가 뜨며 실시간으로 보관돼요!
+                작업 중인 그림이{' '}
+                <span className="font-bold" style={{ color: '#86efac' }}>나의 스케치북</span>
+                에 실시간으로 자동 저장되어, 언제든 이어서 그릴 수 있어요!
               </Row>
 
               <ExpandableRow
                 icon={<Icon src="/images/tracing.png" alt="밑그림 불러오기" />}
-                summary="원하는 그림이나 사진을 불러와 밑그림으로 두고 따라 그릴 수 있어요."
+                summary="그림판 밑에 참고할 사진을 깔고 투명도를 조절해요."
                 details={[
                   '사이드바에서 크기를 조절할 수 있어요.',
                   <>
@@ -106,15 +106,19 @@ export default function HelpModal({ onClose }) {
               />
 
               <Row icon={<Icon src="/images/photo.png" alt="나의 스케치북" />}>
-                내가 그린 작품들을 모아 보는 보관함을 열어요.
-              </Row>
-
-              <Row icon={<Icon src="/images/downloads.png" alt="PNG 저장" />}>
-                완성한 그림을 이미지 파일로 다운로드해요.
+                내가 그린 작품들을 임시 보관함에 저장하고 다시 불러와요.
               </Row>
 
               <Row icon={<Icon src="/images/doan.png" alt="도안 만들기" />}>
-                그림을 선과 숫자가 있는 컬러링 도안으로 바꿔요.
+                내가 그린 도트를 컬러링 도안으로 만들어 인쇄해요.
+              </Row>
+
+              <Row icon={<Icon src={copyIcon} alt="그림 복사하기" />}>
+                그림을 복사해서 우리 반 게시판에 바로 붙여넣기 해요.
+              </Row>
+
+              <Row icon={<Icon src="/images/downloads.png" alt="PNG 저장" />}>
+                완성한 도트 그림을 이미지 파일(PNG)로 저장해요.
               </Row>
             </div>
           </div>
@@ -125,8 +129,7 @@ export default function HelpModal({ onClose }) {
             </p>
 
             <Row icon={<Icon src="/images/home.png" alt="처음 화면으로" />}>
-              캔버스 설정을 변경할 수 있도록 이전 화면으로 돌아가요.{' '}
-              <span style={{ color: '#9ca3af' }}>(그린 그림은 자동 저장되니 걱정 마세요!)</span>
+              캔버스 설정을 변경할 수 있도록 이전 화면으로 돌아가요.
             </Row>
           </div>
 
