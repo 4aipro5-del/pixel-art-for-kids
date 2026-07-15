@@ -8,13 +8,13 @@ const PANEL_BG = '#111214'
 function Row({ icon, wide, children }) {
   return (
     <div
-      className={`flex items-center gap-4 rounded-xl py-4 px-6 ${wide ? 'col-span-2' : ''}`}
+      className={`flex items-center gap-3 rounded-xl py-3 px-5 ${wide ? 'col-span-2' : ''}`}
       style={{ background: PANEL_BG }}
     >
-      <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
+      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
         {icon}
       </div>
-      <p className="text-base text-gray-300 tracking-tight leading-snug">{children}</p>
+      <p className="font-code text-[14px] text-gray-300 leading-snug">{children}</p>
     </div>
   )
 }
@@ -27,18 +27,18 @@ function ExpandableRow({ icon, summary, details }) {
     <div className="rounded-xl col-span-2 overflow-hidden" style={{ background: PANEL_BG }}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-4 py-4 px-6 text-left"
+        className="w-full flex items-center gap-3 py-3 px-5 text-left"
       >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
           {icon}
         </div>
-        <p className="flex-1 text-base text-gray-300 tracking-tight leading-snug">{summary}</p>
+        <p className="flex-1 font-code text-[14px] text-gray-300 leading-snug">{summary}</p>
         <span className="text-gray-500 text-xs flex-shrink-0">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="flex flex-col gap-1.5 pb-4 px-6 pl-[4.5rem]">
+        <div className="flex flex-col gap-1.5 pb-3 px-5 pl-[3.75rem]">
           {details.map((d, i) => (
-            <p key={i} className="text-sm text-gray-400 leading-snug">· {d}</p>
+            <p key={i} className="font-code text-[13px] text-gray-400 leading-snug">· {d}</p>
           ))}
         </div>
       )}
@@ -47,7 +47,7 @@ function ExpandableRow({ icon, summary, details }) {
 }
 
 function Icon({ src, alt }) {
-  return <img src={src} alt={alt} className="w-8 h-8 invert flex-shrink-0" />
+  return <img src={src} alt={alt} className="w-6 h-6 invert flex-shrink-0" />
 }
 
 export default function HelpModal({ onClose }) {
@@ -73,14 +73,14 @@ export default function HelpModal({ onClose }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 pt-0 pb-5 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 pt-0 pb-5 flex flex-col gap-4">
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <p className="font-pixel text-lg font-bold tracking-tight" style={{ color: '#9ca3af' }}>
               그리기 기능
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <Row
                 wide
                 icon={<span className="text-lg font-bold" style={{ color: '#86efac' }}>✓</span>}
@@ -123,7 +123,7 @@ export default function HelpModal({ onClose }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <p className="font-pixel text-lg font-bold tracking-tight" style={{ color: '#9ca3af' }}>
               나가기 기능
             </p>

@@ -2,13 +2,22 @@ import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'pixel_art_sketchbook'
 
-export default function SketchbookModal({ userName, onClose, onEdit }) {
-  const [items, setItems] = useState([])
+// localStorage에서 내 이름과 일치하는 항목만 필터링해서 읽어온다 — 모달을 열 때마다
+// 이 함수로 매번 새로 읽어야, 그림을 그리다 방금 나가기 직전 저장한 최신 상태가
+// (캐시된 옛 State가 아니라) 확실히 반영된다.
+function loadSketchbookItems(userName) {
+  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+  return all.filter(item => item.userName === userName)
+}
 
-  // localStorage에서 내 이름과 일치하는 항목만 필터링해서 보여준다.
+export default function SketchbookModal({ userName, onClose, onEdit }) {
+  // 초기 렌더부터 곧바로 최신 데이터로 채워, "0개의 작품"이 잠깐이라도 보이는 깜빡임 없이 시작한다.
+  const [items, setItems] = useState(() => loadSketchbookItems(userName))
+
+  // 모달은 열릴 때마다 완전히 새로 mount되지만(showSketchbook 조건부 렌더링), 혹시라도
+  // userName이 바뀌거나 다시 열리는 타이밍에 대비해 한 번 더 확실하게 최신 상태로 동기화한다.
   useEffect(() => {
-    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    setItems(all.filter(item => item.userName === userName))
+    setItems(loadSketchbookItems(userName))
   }, [userName])
 
   const handleDelete = (id) => {

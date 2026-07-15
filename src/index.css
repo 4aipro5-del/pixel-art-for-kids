@@ -82,6 +82,12 @@ canvas {
   font-family: 'DungGeunMo', 'Courier New', monospace;
 }
 
+/* 사이드바 소분류 타이틀·도움말 모달 본문 설명용 — 둥근모꼴 대신 가늘고 또렷한 고정폭
+   서체로 가독성을 살린다. 글자 크기는 각 사용처에서 14~15px 사이로 지정한다. */
+.font-code {
+  font-family: 'Nanum Gothic Coding', monospace;
+}
+
 @keyframes pixel-float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   50% { transform: translateY(-18px) rotate(8deg); }

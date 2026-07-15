@@ -48,7 +48,7 @@ function makeEmpty(rows, cols) {
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
+    <p className="font-code text-[14px] font-bold text-gray-400 uppercase tracking-wider mb-3">
       {children}
     </p>
   )
@@ -465,7 +465,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
 
           {/* Brand + 처음 화면으로 */}
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-pixel text-2xl tracking-tight whitespace-nowrap inline-block leading-none" style={{ color: ACCENT_YELLOW, transform: 'translateY(0.3em)' }}>PIXEL ART</span>
+            <span className="font-pixel font-bold text-2xl tracking-tight whitespace-nowrap inline-block leading-none" style={{ color: ACCENT_YELLOW, transform: 'translateY(0.3em)' }}>PIXEL ART</span>
             <HeaderBtn onClick={() => setShowBackModal(true)} title="처음 화면으로" size="lg">
               <img src="/images/home.png" alt="처음 화면으로" className="w-6 h-6 invert" />
             </HeaderBtn>
@@ -500,6 +500,29 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
 
           {/* Save actions */}
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="font-pixel font-bold flex items-center justify-center gap-2 h-10 px-4 rounded-full text-sm transition-colors hover:brightness-125"
+              style={{ background: PANEL_BG, color: ACCENT_YELLOW, border: `1px solid ${ACCENT_YELLOW}` }}
+            >
+              <span
+                aria-hidden="true"
+                className="w-4 h-4"
+                style={{
+                  background: ACCENT_YELLOW,
+                  WebkitMaskImage: 'url(/images/question.png)',
+                  maskImage: 'url(/images/question.png)',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                }}
+              />
+              사용법 안내
+            </button>
+            <div className="w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
             <HeaderBtn onClick={() => headerTracingInputRef.current?.click()} title="밑그림 불러오기">
               <img src="/images/tracing.png" alt="밑그림 불러오기" className="w-5 h-5 invert" />
             </HeaderBtn>
@@ -574,7 +597,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
               />
 
               {/* Palette grid */}
-              <div className="grid grid-cols-4 gap-1.5 mb-2.5">
+              <div className="grid grid-cols-4 gap-1.5 mb-3">
                 {PRESET_COLORS.map(color => (
                   <button
                     key={color}
@@ -593,8 +616,8 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
 
               {/* Recent colors */}
               {recentColors.length > 0 && (
-                <div className="mb-2.5">
-                  <p className="text-xs text-gray-500 font-semibold mb-1.5">최근 사용</p>
+                <div className="mb-3">
+                  <p className="font-code text-xs text-gray-500 font-semibold mb-2">최근 사용</p>
                   <div className="flex gap-1.5 flex-wrap">
                     {recentColors.map((color, i) => (
                       <button
@@ -624,7 +647,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                     className="w-3.5 h-3.5 rounded border border-dashed flex-shrink-0"
                     style={{ background: selectedColor, borderColor: 'rgba(255,255,255,0.3)' }}
                   />
-                  <span className="text-xs text-gray-400 font-medium">직접 선택…</span>
+                  <span className="font-code text-xs text-gray-400 font-medium">직접 선택…</span>
                 </div>
                 <input
                   type="color"
@@ -643,9 +666,9 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                   직접 맞출 수 있게 한다. 기본 100%, 밑그림이 없으면 조작 자체를 막아둔다.
                   옆의 눈동자 버튼으로 잠시 숨기면(불투명도만 0) 슬라이더도 함께 비활성화되지만,
                   크기값 자체는 그대로 남아 있다가 다시 보이기를 누르면 그 크기로 복귀한다. */}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-400">밑그림 크기</span>
-                <span className="text-xs font-bold" style={{ color: ACCENT_YELLOW }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-code text-[14px] font-bold text-gray-400">밑그림 크기</span>
+                <span className="font-code text-xs font-bold" style={{ color: ACCENT_YELLOW }}>
                   {Math.round(tracingScale * 100)}%
                 </span>
               </div>
@@ -676,19 +699,8 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                   />
                 </button>
               </div>
-              <div className="flex justify-center mt-2 mb-3">
-                <button
-                  onClick={() => setTracingScale(1)}
-                  disabled={!tracingImage}
-                  className="font-pixel text-xs px-4 py-1.5 rounded-full transition-colors hover:brightness-125 disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ background: PAGE_BG, color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)' }}
-                >
-                  초기화
-                </button>
-              </div>
-
               <div
-                className="w-full aspect-square rounded-xl overflow-hidden flex items-center justify-center"
+                className="w-full h-32 rounded-xl overflow-hidden flex items-center justify-center mt-3"
                 style={{
                   background: tracingImage ? '#ffffff' : PAGE_BG,
                   border: tracingImage ? 'none' : '1px dashed rgba(255,255,255,0.15)',
@@ -701,45 +713,18 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <p className="text-xs text-gray-500 text-center px-4 leading-relaxed">
+                  <p className="font-code text-xs text-gray-500 text-center px-2 leading-relaxed whitespace-nowrap">
                     밑그림을 불러오면<br />원본 이미지가 여기 보여요
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Spacer pushes zoom to bottom */}
-            <div className="flex-1" />
-
-            {/* 도움말 */}
-            <button
-              onClick={() => setShowHelpModal(true)}
-              className="font-pixel flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-sm transition-colors hover:brightness-125"
-              style={{ background: PANEL_BG, color: ACCENT_YELLOW, border: `1px solid ${ACCENT_YELLOW}` }}
-            >
-              <span
-                aria-hidden="true"
-                className="w-4 h-4"
-                style={{
-                  background: ACCENT_YELLOW,
-                  WebkitMaskImage: 'url(/images/question.png)',
-                  maskImage: 'url(/images/question.png)',
-                  WebkitMaskSize: 'contain',
-                  maskSize: 'contain',
-                  WebkitMaskRepeat: 'no-repeat',
-                  maskRepeat: 'no-repeat',
-                  WebkitMaskPosition: 'center',
-                  maskPosition: 'center',
-                }}
-              />
-              사용법 안내
-            </button>
-
             {/* Zoom */}
             <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
-              <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center justify-between mb-3">
                 <SectionLabel>확대 / 축소</SectionLabel>
-                <span className="text-xs font-bold mb-2.5" style={{ color: ACCENT_YELLOW }}>
+                <span className="font-code text-xs font-bold mb-3" style={{ color: ACCENT_YELLOW }}>
                   {Math.round(zoom * 100)}%
                 </span>
               </div>
@@ -753,16 +738,16 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                 className="w-full cursor-pointer"
                 style={{ accentColor: ACCENT_YELLOW }}
               />
-              <div className="flex justify-between items-center mt-1.5">
-                <span className="text-xs text-gray-500">25%</span>
+              <div className="flex justify-between items-center mt-2">
+                <span className="font-code text-xs text-gray-500">25%</span>
                 <button
                   onClick={() => setZoom(1)}
-                  className="text-xs font-semibold hover:underline transition-colors"
+                  className="font-code text-xs font-semibold hover:underline transition-colors"
                   style={{ color: '#9ca3af' }}
                 >
                   초기화
                 </button>
-                <span className="text-xs text-gray-500">200%</span>
+                <span className="font-code text-xs text-gray-500">200%</span>
               </div>
             </div>
 
@@ -874,10 +859,10 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
           >
             {/* 메시지 */}
             <div className="text-center flex flex-col gap-2">
-              <p className="font-pixel text-base text-white">크기 선택 화면으로 돌아갈까요?</p>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                캔버스 크기 선택 화면으로 돌아가요.<br />
-                새 캔버스가 열리기 전에, 지금 그림을 복사해주세요!
+              <p className="font-pixel font-bold text-base text-white">크기 선택 화면으로 돌아갈까요?</p>
+              <p className="font-code text-[14px] text-gray-400 leading-relaxed">
+                캔버스 크기 선택 화면으로 돌아갑니다.<br />
+                <span className="font-bold" style={{ color: ACCENT_YELLOW }}>지금 그렸던 그림이 저장되지 않을 수 있어요!</span>
               </p>
             </div>
 
@@ -885,14 +870,21 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowBackModal(false)}
-                className="flex-1 py-3 rounded-full text-sm font-semibold transition-colors active:scale-[0.97]"
+                className="font-pixel font-bold flex-1 py-3 rounded-full text-sm transition-colors active:scale-[0.97]"
                 style={{ background: 'rgba(255,255,255,0.08)', color: '#e2e8f0' }}
               >
                 취소
               </button>
               <button
-                onClick={() => { setShowBackModal(false); onGoToSetup() }}
-                className="flex-1 py-3 rounded-full text-sm font-semibold transition-colors active:scale-[0.97]"
+                onClick={() => {
+                  // 디바운스된 자동 저장(500ms)이 아직 실행되기 전에 화면을 떠나면 그 타이머가
+                  // 언마운트로 취소되어 마지막 몇 초의 그림이 스케치북에 반영되지 않는다.
+                  // 나가기 직전 즉시(동기) 한 번 더 저장해 이 경쟁 상태를 없앤다.
+                  persistCurrentSlot()
+                  setShowBackModal(false)
+                  onGoToSetup()
+                }}
+                className="font-pixel font-bold flex-1 py-3 rounded-full text-sm transition-colors active:scale-[0.97]"
                 style={{ background: ACCENT_YELLOW, color: '#000000' }}
               >
                 확인
