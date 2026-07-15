@@ -121,6 +121,9 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const [tracingOpacity, setTracingOpacity] = useState(0.25)
   const [tracingScale, setTracingScale] = useState(1) // 밑그림 크기 조절 슬라이더 — 1 = 100%
   const [tracingVisible, setTracingVisible] = useState(true) // 눈동자 토글 — 잠시 숨기기(불투명도만 0으로, 크기값은 보존)
+  // 펜/지우개/채우기 등으로 실제 캔버스를 한 번이라도 변경했는지 — false인 동안은 아무 작업도
+  // 안 한 빈 캔버스이므로 스케치북에 저장하지 않는다(handleCommit에서만 true로 전환).
+  const [isDirty, setIsDirty] = useState(false)
   const toastTimer = useRef(null)
   const prevToolRef = useRef('pen')  // eyedrop 취소 시 이전 도구 복원용
   const headerTracingInputRef = useRef(null)
@@ -276,6 +279,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), { pixels: pixels.map(r => [...r]), tracingImage }])
     setFuture([])
     setPixels(newPixels)
+    setIsDirty(true) // 펜/지우개/채우기로 실제 캔버스가 바뀐 순간 — 이제부터 저장할 가치가 있다
   }, [pixels, tracingImage])
 
   const handleUndo = useCallback(() => {
@@ -328,6 +332,9 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   // 도안 만들기 진입 시 저장이 모두 이 헬퍼를 공유한다. fileNameOverride를 주지 않으면
   // 기존에 쓰던 이름(또는 기본 이름)을 그대로 유지한다.
   const persistCurrentSlot = useCallback((fileNameOverride) => {
+    // 실제로 그린 적이 없는 빈 캔버스는 저장 자체를 건너뛴다 — 자동 저장, 전체 지우기 직전
+    // 저장, 도안 만들기 진입 저장, 뒤로 가기 확정 저장이 모두 이 한 곳에서 함께 보호된다.
+    if (!isDirty) return null
     const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
     const idx = all.findIndex(it => it.id === projectIdRef.current)
     const now = new Date().toISOString()
@@ -345,7 +352,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
     currentFileNameRef.current = entry.fileName
     return entry
-  }, [buildSketchbookEntry, buildDefaultFileName])
+  }, [isDirty, buildSketchbookEntry, buildDefaultFileName])
 
   const handleClearAll = () => {
     // 캔버스를 비우기 직전까지 그린 그림을 디바운스 없이 즉시 저장
