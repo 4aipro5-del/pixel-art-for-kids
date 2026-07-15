@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import PixelCanvas from '../components/PixelCanvas'
 import SketchbookModal from '../components/SketchbookModal'
 import DoanView from '../components/DoanView'
-import { uploadWallPost, saveArtwork } from '../firebase'
+import { saveArtwork, uploadWallPost } from '../supabase'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixelart_sketchbook'
@@ -375,7 +375,7 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
       onGoToWall()
     } catch (err) {
       console.error(err)
-      showToast('업로드 실패. Firebase 설정을 확인해주세요.')
+      showToast('업로드 실패. 잠시 후 다시 시도해주세요.')
     } finally {
       setUploading(false)
     }

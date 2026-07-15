@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getRecentArtworks } from '../firebase'
+import { getRecentArtworks } from '../supabase'
 import ArtworkThumb from '../components/ArtworkThumb'
 
 const ACCENT = '#10B981'

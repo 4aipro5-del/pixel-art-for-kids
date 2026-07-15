@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getWallPosts } from '../firebase'
+import { getPosts } from '../supabase'
 
 const ACCENT = '#10B981'
 
@@ -20,7 +20,7 @@ export default function WallPage({ onBack }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    getWallPosts()
+    getPosts()
       .then(setPosts)
       .catch(() => setError('담벼락을 불러올 수 없어요.'))
       .finally(() => setLoading(false))
