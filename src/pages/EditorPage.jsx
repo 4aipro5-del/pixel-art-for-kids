@@ -75,6 +75,13 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     }
   }, [tracingImage])
 
+  // 세션 이름 없이는 저장/공유가 전부 막히므로(빈 문자열은 saveArtwork/uploadWallPost가 던지는
+  // 에러의 원인이 됨), 로그아웃 후 뒤로가기 등으로 이름 없이 여기 들어온 경우 크기 선택 화면으로
+  // 되돌린다 — 정상적인 진입 흐름에서는 절대 발생하지 않는 방어용 안전장치.
+  useEffect(() => {
+    if (!userName || !userName.trim()) onGoToSetup()
+  }, [userName]) // eslint-disable-line
+
   const handleTracingUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return

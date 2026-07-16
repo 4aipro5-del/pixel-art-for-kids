@@ -118,6 +118,12 @@ export default function SetupPage({ userName, onNext, onGoHome, onResume }) {
                 어떤 크기에 그릴까요?
               </h1>
               <p className="text-[1.1rem] sm:text-[1.2375rem] text-gray-400">화면 비율과 픽셀 해상도를 골라요</p>
+              <p className="mt-3 text-sm text-gray-500">
+                <span className="font-bold" style={{ color: ACCENT }}>{userName}</span>님으로 접속 중 ·{' '}
+                <button onClick={onGoHome} className="underline hover:text-white transition-colors">
+                  다른 이름으로 시작하기
+                </button>
+              </p>
             </div>
 
             {/* ── 내 이전 작품 — 이어서 그리기 ──────────────────── */}
@@ -315,7 +321,7 @@ export default function SetupPage({ userName, onNext, onGoHome, onResume }) {
             >
               <button
                 onClick={onGoHome}
-                title="처음으로"
+                title="처음으로 (로그아웃)"
                 className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center transition-all hover:brightness-125 active:scale-[0.97]"
                 style={{ background: PANEL_BG, border: `1px solid ${ACCENT}` }}
               >
