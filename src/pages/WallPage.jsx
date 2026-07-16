@@ -20,6 +20,7 @@ export default function WallPage({ onBack }) {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [brokenIds, setBrokenIds] = useState(() => new Set())
 
   useEffect(() => {
     getPosts()
@@ -125,14 +126,19 @@ export default function WallPage({ onBack }) {
                   className="group rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.02]"
                   style={{ background: PANEL_BG }}
                 >
-                  {/* 이미지 */}
+                  {/* 이미지 — 로드 실패 시 엑박 대신 대체 아이콘을 보여준다 */}
                   <div className="aspect-square flex items-center justify-center overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                    <img
-                      src={post.imageUrl}
-                      alt={`${post.userName}의 픽셀아트`}
-                      className="w-full h-full object-contain"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
+                    {brokenIds.has(post.id) ? (
+                      <span className="text-3xl opacity-40">🖼️</span>
+                    ) : (
+                      <img
+                        src={post.imageUrl}
+                        alt={`${post.userName}의 픽셀아트`}
+                        className="w-full h-full object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                        onError={() => setBrokenIds(prev => new Set(prev).add(post.id))}
+                      />
+                    )}
                   </div>
 
                   {/* 메타 */}

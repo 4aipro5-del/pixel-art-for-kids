@@ -24,6 +24,15 @@ create policy "Anyone can insert artworks"
   on public.artworks for insert
   with check (true);
 
+-- "이어서 그리기(Resume)" 기능이 기존 행을 update로 덮어쓸 수 있어야 하므로 추가.
+-- 이 앱엔 실제 로그인/인증이 없어(이름만 입력) select/insert 정책과 동일하게 permissive하게
+-- 열어둔다 — 클라이언트는 항상 자기 user_name으로 좁힌 목록에서 고른 작품의 id로만 update를
+-- 호출하지만, DB 차원에서 다른 사용자의 행을 절대 못 바꾸게 강제하는 건 아니라는 점은 유의.
+create policy "Anyone can update artworks"
+  on public.artworks for update
+  using (true)
+  with check (true);
+
 -- ── posts (담벼락) ────────────────────────────────────────────────────
 create table if not exists public.posts (
   id bigint generated always as identity primary key,

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { getMyArtworks } from '../supabase'
+import ArtworkThumb from '../components/ArtworkThumb'
 
 const ACCENT = '#f7d070'
 const PAGE_BG = '#1a1c1e'
@@ -67,10 +69,21 @@ function MiniGrid({ count, size, active }) {
   )
 }
 
-export default function SetupPage({ onNext, onGoHome }) {
+function timeAgo(date) {
+  if (!date) return ''
+  const diff = (Date.now() - date.getTime()) / 1000
+  if (diff < 60)    return '방금 전'
+  if (diff < 3600)  return `${Math.floor(diff / 60)}분 전`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`
+  return date.toLocaleDateString('ko-KR')
+}
+
+export default function SetupPage({ userName, onNext, onGoHome, onResume }) {
   const [ratio, setRatio] = useState('square')
   const [orientation, setOrientation] = useState('landscape')
   const [levelIndex, setLevelIndex] = useState(0)
+  const [myArtworks, setMyArtworks] = useState([])
+  const [loadingArtworks, setLoadingArtworks] = useState(true)
 
   const selectedRatio = RATIOS.find(r => r.id === ratio)
   const grid = getGrid(ratio, orientation, levelIndex)
@@ -80,6 +93,16 @@ export default function SetupPage({ onNext, onGoHome }) {
   useEffect(() => {
     if (selectedRatio.hasOrientation) setOrientation(selectedRatio.defaultOrientation)
   }, [ratio]) // eslint-disable-line
+
+  // "내 이전 작품 — 이어서 그리기" 목록
+  useEffect(() => {
+    let cancelled = false
+    getMyArtworks(userName)
+      .then(data => { if (!cancelled) setMyArtworks(data) })
+      .catch(console.warn)
+      .finally(() => { if (!cancelled) setLoadingArtworks(false) })
+    return () => { cancelled = true }
+  }, [userName])
 
   return (
     <div className="relative h-screen w-screen overflow-hidden" style={{ background: PAGE_BG }}>
@@ -96,6 +119,39 @@ export default function SetupPage({ onNext, onGoHome }) {
               </h1>
               <p className="text-[1.1rem] sm:text-[1.2375rem] text-gray-400">화면 비율과 픽셀 해상도를 골라요</p>
             </div>
+
+            {/* ── 내 이전 작품 — 이어서 그리기 ──────────────────── */}
+            {!loadingArtworks && myArtworks.length > 0 && (
+              <div>
+                <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+                  내 이전 작품 — 이어서 그리기
+                </p>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {myArtworks.map(artwork => (
+                    <button
+                      key={artwork.id}
+                      onClick={() => onResume(artwork)}
+                      className="flex-shrink-0 w-28 sm:w-32 rounded-2xl overflow-hidden text-left transition-transform hover:scale-[1.03] active:scale-[0.97]"
+                      style={{ background: PANEL_BG }}
+                    >
+                      <div className="aspect-square" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        <ArtworkThumb pixels={artwork.pixels} cols={artwork.cols} rows={artwork.rows} fill />
+                      </div>
+                      <div className="px-2.5 py-2">
+                        <p className="font-pixel text-[11px] text-white">{artwork.cols}×{artwork.rows}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{timeAgo(artwork.createdAt)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex w-full items-center gap-3 mt-6">
+                  <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+                  <span className="font-pixel text-sm text-gray-500">또는 새로 만들기</span>
+                  <div className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+                </div>
+              </div>
+            )}
 
             <div
               className="hidden sm:flex items-center justify-between rounded-2xl px-5 py-4"

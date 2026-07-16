@@ -9,6 +9,7 @@ export default function App() {
   const [page, setPage] = useState('entry')
   const [userName, setUserName] = useState('')
   const [canvasConfig, setCanvasConfig] = useState({ cols: 16, rows: 16 })
+  const [resumeArtwork, setResumeArtwork] = useState(null)
 
   useEffect(() => {
     window.history.replaceState({ page: 'entry' }, '')
@@ -32,7 +33,9 @@ export default function App() {
       )}
       {page === 'setup' && (
         <SetupPage
-          onNext={(cfg) => { setCanvasConfig(cfg); navigate('editor') }}
+          userName={userName}
+          onNext={(cfg) => { setCanvasConfig(cfg); setResumeArtwork(null); navigate('editor') }}
+          onResume={(artwork) => { setCanvasConfig({ cols: artwork.cols, rows: artwork.rows }); setResumeArtwork(artwork); navigate('editor') }}
           onGoHome={() => navigate('entry')}
         />
       )}
@@ -41,6 +44,7 @@ export default function App() {
           userName={userName}
           gridCols={canvasConfig.cols}
           gridRows={canvasConfig.rows}
+          resumeArtwork={resumeArtwork}
           onGoToWall={() => navigate('wall')}
           onGoToSetup={() => navigate('setup')}
         />

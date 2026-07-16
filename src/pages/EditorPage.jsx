@@ -38,8 +38,14 @@ function makeEmpty(rows, cols) {
   return Array(rows).fill(null).map(() => Array(cols).fill(null))
 }
 
-export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, onGoToSetup }) {
-  const [pixels, setPixels] = useState(() => makeEmpty(gridRows, gridCols))
+export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork, onGoToWall, onGoToSetup }) {
+  const [pixels, setPixels] = useState(() => (
+    resumeArtwork?.pixels ? resumeArtwork.pixels.map(row => [...row]) : makeEmpty(gridRows, gridCols)
+  ))
+  // 이번 편집 세션 동안 저장이 계속 덮어써야 할 artworks 행의 id. 이어그리기로 들어왔으면 그
+  // 작품의 id를 그대로 물려받고, 새 캔버스면 null로 시작해 첫 저장 때 insert로 새로 발급받는다 —
+  // 그 이후의 모든 저장은 이 id로 update되어, 세션당 중복 행이 쌓이지 않는다.
+  const artworkIdRef = useRef(resumeArtwork?.id ?? null)
   const [history, setHistory] = useState([])
   const [future, setFuture] = useState([])
   const [selectedColor, setSelectedColor] = useState(PASTEL_COLORS[0])
@@ -202,8 +208,11 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
     setUploading(true)
     try {
       await uploadWallPost(userName, getDataURL(512))
-      // 픽셀 데이터도 artworks 컬렉션에 저장 (진입 화면 갤러리용)
-      saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
+      // 픽셀 데이터도 artworks 테이블에 저장(진입 화면 갤러리 + 이어그리기용) — 이 세션의
+      // artworkIdRef가 있으면 그 행을 덮어쓰고, 없으면 새로 만들어 이후 저장에 이어서 쓴다.
+      saveArtwork(userName, pixels, gridCols, gridRows, artworkIdRef.current)
+        .then(id => { artworkIdRef.current = id })
+        .catch(console.warn)
       showToast('담벼락에 올렸어요!')
       onGoToWall()
     } catch (err) {
@@ -215,8 +224,10 @@ export default function EditorPage({ userName, gridCols, gridRows, onGoToWall, o
   }
 
   const handleOpenDoan = () => {
-    // 도안 만들기 진입 시 작품 저장
-    saveArtwork(userName, pixels, gridCols, gridRows).catch(console.warn)
+    // 도안 만들기 진입 시 작품 저장 (이어그리기 세션이면 같은 행을 덮어씀)
+    saveArtwork(userName, pixels, gridCols, gridRows, artworkIdRef.current)
+      .then(id => { artworkIdRef.current = id })
+      .catch(console.warn)
     setDoanMode(true)
   }
 
