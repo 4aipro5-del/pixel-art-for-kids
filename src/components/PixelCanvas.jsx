@@ -4,7 +4,7 @@ export default function PixelCanvas({
   pixels, gridCols, gridRows,
   selectedColor, tool, brushSize, zoom,
   onCommit, onColorPick, onPaintComplete,
-  tracingImage, tracingOpacity,
+  tracingImage, tracingOpacity, tracingScale, tracingVisible,
 }) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -241,7 +241,7 @@ export default function PixelCanvas({
     <div
       ref={containerRef}
       className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 sm:p-6"
-      style={{ background: '#F3F4F6' }}
+      style={{ background: '#1a1c1e' }}
     >
       <div style={{ position: 'relative' }}>
         {tracingImage && (
@@ -254,7 +254,9 @@ export default function PixelCanvas({
               width: '100%',
               height: '100%',
               objectFit: 'contain',
-              opacity: tracingOpacity,
+              opacity: tracingVisible ? tracingOpacity : 0,
+              transform: `scale(${tracingScale})`,
+              transformOrigin: 'center',
               pointerEvents: 'none',
             }}
           />
@@ -263,8 +265,8 @@ export default function PixelCanvas({
           ref={canvasRef}
           style={{
             touchAction: 'none',
-            boxShadow: '0 4px 32px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
-            border: '1px solid rgba(0,0,0,0.05)',
+            boxShadow: '0 12px 48px rgba(0,0,0,0.55)',
+            border: '1px solid rgba(255,255,255,0.08)',
             display: 'block',
           }}
         />

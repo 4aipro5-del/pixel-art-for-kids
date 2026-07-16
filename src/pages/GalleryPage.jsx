@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { getRecentArtworks } from '../supabase'
 import ArtworkThumb from '../components/ArtworkThumb'
 
-const ACCENT = '#10B981'
+const ACCENT = '#f7d070'
+const PAGE_BG = '#1a1c1e'
+const PANEL_BG = '#111214'
 const RAINBOW = ['#F87171', '#FB923C', '#FCD34D', '#4ADE80', '#38BDF8', '#6366F1', '#C084FC']
 
 const AVATAR_COLORS = [
@@ -23,14 +25,14 @@ function timeAgo(date) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-      <div className="aspect-square bg-gray-100 animate-pulse" />
+    <div className="rounded-2xl overflow-hidden" style={{ background: PANEL_BG }}>
+      <div className="aspect-square animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
       <div className="px-3.5 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-gray-200 animate-pulse flex-shrink-0" />
-          <div className="h-3 w-16 rounded-full bg-gray-200 animate-pulse" />
+          <div className="w-6 h-6 rounded-lg animate-pulse flex-shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+          <div className="h-3 w-16 rounded-full animate-pulse" style={{ background: 'rgba(255,255,255,0.1)' }} />
         </div>
-        <div className="h-2.5 w-12 rounded-full bg-gray-100 animate-pulse ml-8" />
+        <div className="h-2.5 w-12 rounded-full animate-pulse ml-8" style={{ background: 'rgba(255,255,255,0.06)' }} />
       </div>
     </div>
   )
@@ -82,13 +84,17 @@ export default function GalleryPage({ onBack }) {
   const hasData   = status === 'done' && artworks.length > 0
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
+    <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ background: PAGE_BG }}>
 
       {/* ── Header ─────────────────────────────────── */}
-      <header className="flex items-center gap-4 px-6 h-14 bg-white border-b border-gray-100 flex-shrink-0 z-10">
+      <header
+        className="flex items-center gap-4 px-6 h-14 flex-shrink-0 z-10"
+        style={{ background: PAGE_BG, borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+      >
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-bold transition-colors flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-bold transition-colors flex-shrink-0 hover:bg-[#f7d070]/10"
+          style={{ borderColor: ACCENT, color: ACCENT }}
         >
           ← 처음으로
         </button>
@@ -99,7 +105,7 @@ export default function GalleryPage({ onBack }) {
               <div key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
             ))}
           </div>
-          <span className="text-sm font-black text-gray-900 tracking-tight">
+          <span className="text-sm font-black tracking-tight text-gray-100">
             친구들의 픽셀아트 담벼락
           </span>
         </div>
@@ -107,8 +113,8 @@ export default function GalleryPage({ onBack }) {
         <div className="ml-auto">
           {hasData && (
             <span
-              className="text-xs font-bold px-2.5 py-1 rounded-full"
-              style={{ background: `${ACCENT}15`, color: ACCENT }}
+              className="text-xs font-bold px-3 py-1.5 rounded-full border"
+              style={{ borderColor: ACCENT, color: ACCENT }}
             >
               {artworks.length}개의 작품
             </span>
@@ -136,7 +142,7 @@ export default function GalleryPage({ onBack }) {
         {/* 에러 */}
         {isError && (
           <div className="flex flex-col items-center justify-center h-full gap-5 p-6">
-            <div className="w-20 h-20 rounded-3xl bg-red-50 flex items-center justify-center text-4xl">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl" style={{ background: 'rgba(248,113,113,0.12)' }}>
               😢
             </div>
             <div className="text-center">
@@ -145,7 +151,7 @@ export default function GalleryPage({ onBack }) {
             </div>
             <button
               onClick={onBack}
-              className="mt-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+              className="mt-2 px-5 py-2.5 rounded-full text-sm font-bold text-black"
               style={{ background: ACCENT }}
             >
               처음으로 돌아가기
@@ -157,13 +163,13 @@ export default function GalleryPage({ onBack }) {
         {isEmpty && (
           <div className="flex flex-col items-center justify-center h-full gap-5 p-6">
             <div
-              className="w-24 h-24 rounded-3xl flex items-center justify-center"
-              style={{ background: `${ACCENT}12`, fontSize: '3rem' }}
+              className="w-24 h-24 rounded-2xl border-2 flex items-center justify-center"
+              style={{ borderColor: ACCENT, background: PANEL_BG, fontSize: '3rem' }}
             >
               🖼️
             </div>
             <div className="text-center">
-              <p className="text-lg font-black text-gray-600 mb-2">
+              <p className="text-lg font-black text-gray-100 mb-2">
                 아직 등록된 친구들의 작품이 없어요!
               </p>
               <p className="text-sm text-gray-400">
@@ -172,8 +178,8 @@ export default function GalleryPage({ onBack }) {
             </div>
             <button
               onClick={onBack}
-              className="mt-1 px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)' }}
+              className="mt-1 px-6 py-3 rounded-full text-sm font-bold text-black transition-all hover:brightness-105 hover:scale-[1.02]"
+              style={{ background: ACCENT }}
             >
               ✏️ 그림 그리러 가기
             </button>
@@ -190,9 +196,10 @@ export default function GalleryPage({ onBack }) {
               {artworks.map(artwork => (
                 <div
                   key={artwork.id}
-                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-200 hover:scale-[1.03] hover:shadow-md"
+                  className="rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.03]"
+                  style={{ background: PANEL_BG }}
                 >
-                  <div className="aspect-square bg-gray-50 overflow-hidden">
+                  <div className="aspect-square overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <ArtworkThumb
                       pixels={artwork.pixels}
                       cols={artwork.cols}
@@ -208,7 +215,7 @@ export default function GalleryPage({ onBack }) {
                       >
                         {artwork.userName?.[0]?.toUpperCase() ?? '?'}
                       </div>
-                      <p className="font-bold text-gray-700 text-sm truncate">
+                      <p className="font-bold text-gray-100 text-sm truncate">
                         {artwork.userName}
                       </p>
                     </div>

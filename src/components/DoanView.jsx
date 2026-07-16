@@ -1,6 +1,8 @@
 import { useRef, useEffect, useMemo } from 'react'
 
-const ACCENT = '#10B981'
+const ACCENT = '#f7d070'
+const PAGE_BG = '#1a1c1e'
+const PANEL_BG = '#111214'
 
 function getTextColor(hex) {
   if (!hex || hex.length < 7) return '#333333'
@@ -133,11 +135,14 @@ export default function DoanView({ pixels, gridCols, gridRows, onClose }) {
     <div className="flex flex-col w-full" style={{ height: '100%' }}>
 
       {/* ── Toolbar (hidden on print) ─────────────────── */}
-      <div className="doan-no-print flex items-center justify-between px-4 py-2.5 bg-white border-b border-gray-100 flex-shrink-0">
+      <div
+        className="doan-no-print flex items-center justify-between px-4 py-2.5 flex-shrink-0"
+        style={{ background: PAGE_BG, borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+      >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-black text-gray-800">숫자 색칠 도안</span>
+          <span className="font-pixel text-sm text-white">숫자 색칠 도안</span>
           {entries.length > 0 && (
-            <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: PANEL_BG, color: '#9ca3af' }}>
               {entries.length}가지 색상
             </span>
           )}
@@ -145,37 +150,39 @@ export default function DoanView({ pixels, gridCols, gridRows, onClose }) {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors hover:brightness-125"
+            style={{ background: PANEL_BG, color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.15)' }}
           >
             ⎙ 인쇄하기
           </button>
           <button
             onClick={handleSavePNG}
             disabled={entries.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-30"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-black transition-all hover:brightness-105 disabled:opacity-30"
             style={{ background: ACCENT }}
           >
             ↓ 이미지 저장
           </button>
           <button
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-colors hover:brightness-125"
+            style={{ background: PANEL_BG, color: '#9ca3af', border: '1px solid rgba(255,255,255,0.15)' }}
           >
             ✕ 닫기
           </button>
         </div>
       </div>
 
-      {/* ── Print area ───────────────────────────────── */}
+      {/* ── Print area (화면: 다크 / 인쇄: print:!bg-white가 인라인 배경보다 우선해 항상 흰색으로 강제) ── */}
       <div
         id="doan-print-area"
-        className="flex-1 overflow-y-auto"
-        style={{ background: '#F9FAFB', padding: 24 }}
+        className="flex-1 overflow-y-auto print:!bg-white"
+        style={{ background: PAGE_BG, padding: 24 }}
       >
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: 260 }}>
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl bg-gray-100">🎨</div>
-            <p className="text-sm font-bold text-gray-400">캔버스에 그림을 먼저 그려주세요</p>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl" style={{ background: PANEL_BG }}>🎨</div>
+            <p className="text-sm font-bold text-gray-500">캔버스에 그림을 먼저 그려주세요</p>
             <button
               onClick={onClose}
               className="text-xs font-semibold hover:underline"
@@ -218,10 +225,10 @@ export default function DoanView({ pixels, gridCols, gridRows, onClose }) {
               <div style={{ height: 1.5, background: '#E5E7EB', marginTop: 14 }} />
             </div>
 
-            {/* Diagram canvas */}
+            {/* Diagram canvas — canvas 자체는 drawCells가 항상 흰 배경으로 그리므로 그대로 두고, 감싸는 카드만 다크 톤 */}
             <div
-              className="doan-canvas-wrap bg-white rounded-2xl p-4 overflow-auto"
-              style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+              className="doan-canvas-wrap rounded-2xl p-4 overflow-auto"
+              style={{ background: PANEL_BG, boxShadow: '0 2px 12px rgba(0,0,0,0.35)' }}
             >
               <canvas
                 ref={canvasRef}
@@ -231,14 +238,15 @@ export default function DoanView({ pixels, gridCols, gridRows, onClose }) {
 
             {/* Color legend */}
             <div
-              className="doan-legend-wrap bg-white rounded-2xl p-4"
+              className="doan-legend-wrap rounded-2xl p-4"
               style={{
+                background: PANEL_BG,
                 maxWidth: Math.min(gridCols * displayCs + 32, window.innerWidth - 80),
                 width: '100%',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.35)',
               }}
             >
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-gray-500 print:!text-black">
                 색상 가이드
               </p>
               <div className="flex flex-wrap gap-2">

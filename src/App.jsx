@@ -33,6 +33,7 @@ export default function App() {
       {page === 'setup' && (
         <SetupPage
           onNext={(cfg) => { setCanvasConfig(cfg); navigate('editor') }}
+          onGoHome={() => navigate('entry')}
         />
       )}
       {page === 'editor' && (

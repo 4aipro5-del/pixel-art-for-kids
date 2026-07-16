@@ -1,68 +1,46 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const ACCENT = '#10B981'
+const ACCENT = '#f7d070'
+const PAGE_BG = '#1a1c1e'
+const PANEL_BG = '#111214'
 
 const RATIOS = [
-  {
-    id: '1:1',
-    label: '정사각형',
-    sublabel: '가로 세로가 같아요',
-    pw: 60, ph: 60,
-  },
-  {
-    id: '9:16',
-    label: '스마트폰',
-    sublabel: '세로가 긴 화면이에요',
-    pw: 34, ph: 60,
-  },
-  {
-    id: 'a4',
-    label: '문서 A4',
-    sublabel: '종이처럼 긴 비율이에요',
-    pw: 43, ph: 60,
-  },
+  { id: 'square', label: '정사각형', sublabel: '가로 세로가 같아요',     hasOrientation: false },
+  { id: 'tablet', label: '태블릿',   sublabel: '화면 비율 4:3',          hasOrientation: true, defaultOrientation: 'landscape' },
+  { id: 'a4',     label: 'A4 출력',  sublabel: '종이처럼 긴 비율이에요', hasOrientation: true, defaultOrientation: 'portrait' },
 ]
 
-const RESOLUTIONS = [
-  {
-    id: 16,
-    badge: '쉬움',
-    badgeClass: 'bg-emerald-50 text-emerald-600',
-    desc: '큼직한 픽셀로 편하게',
-    dotCount: 3,
-    dotSize: 14,
-  },
-  {
-    id: 24,
-    badge: '보통',
-    badgeClass: 'bg-amber-50 text-amber-600',
-    desc: '딱 알맞은 크기예요',
-    dotCount: 4,
-    dotSize: 10,
-  },
-  {
-    id: 32,
-    badge: '고급',
-    badgeClass: 'bg-blue-50 text-blue-600',
-    desc: '더 세밀하게 그려봐요',
-    dotCount: 5,
-    dotSize: 7,
-  },
-  {
-    id: 64,
-    badge: '전문가',
-    badgeClass: 'bg-rose-50 text-rose-500',
-    desc: '섬세하게 표현 가능해요',
-    dotCount: 6,
-    dotSize: 5,
-  },
+// 각 비율의 "기준 방향" 해상도 [쉬움, 보통, 어려움]. 반대 방향은 cols/rows를 서로 바꿔 계산한다.
+// 정사각형: 방향 없음(고정) · 태블릿: 기준 = 가로 · A4: 기준 = 세로
+const BASE_GRIDS = {
+  square: [{ cols: 24, rows: 24 }, { cols: 32, rows: 32 }, { cols: 64, rows: 64 }],
+  tablet: [{ cols: 28, rows: 21 }, { cols: 36, rows: 27 }, { cols: 48, rows: 36 }],
+  a4:     [{ cols: 20, rows: 28 }, { cols: 30, rows: 42 }, { cols: 45, rows: 63 }],
+}
+
+const LEVELS = [
+  { badge: '쉬움',   desc: '큼직한 픽셀로 편하게',   dotCount: 3, dotSize: 14 },
+  { badge: '보통',   desc: '딱 알맞은 크기예요',     dotCount: 4, dotSize: 10 },
+  { badge: '어려움', desc: '섬세하게 표현 가능해요', dotCount: 5, dotSize: 7 },
 ]
 
+function isBaseOrientation(ratioId, orientation) {
+  return (ratioId === 'tablet' && orientation === 'landscape')
+      || (ratioId === 'a4' && orientation === 'portrait')
+      || ratioId === 'square'
+}
 
-function getGrid(ratio, res) {
-  if (ratio === '1:1')  return { cols: res, rows: res }
-  if (ratio === '9:16') return { cols: Math.round(res * 9 / 16), rows: res }
-  return { cols: res, rows: Math.round(res * Math.SQRT2) }
+function getGrid(ratioId, orientation, levelIndex) {
+  const base = BASE_GRIDS[ratioId][levelIndex]
+  if (isBaseOrientation(ratioId, orientation)) return base
+  return { cols: base.rows, rows: base.cols } // 방향 전환 시 X/Y를 서로 바꾼다
+}
+
+// 비율 카드 미리보기 박스 크기(정사각형 60x60 기준 박스 안에 맞춘 비율)
+function getPreviewBox(ratioId, orientation) {
+  const boxes = { square: { w: 60, h: 60 }, tablet: { w: 60, h: 45 }, a4: { w: 43, h: 60 } }
+  const box = boxes[ratioId]
+  return isBaseOrientation(ratioId, orientation) ? box : { w: box.h, h: box.w }
 }
 
 // 해상도 카드 안의 미니 픽셀 그리드 미리보기
@@ -80,8 +58,8 @@ function MiniGrid({ count, size, active }) {
             width: size,
             height: size,
             background: active
-              ? (i % 5 === 0 || i % 7 === 0 ? ACCENT : `${ACCENT}30`)
-              : (i % 5 === 0 || i % 7 === 0 ? '#D1D5DB' : '#F3F4F6'),
+              ? (i % 5 === 0 || i % 7 === 0 ? '#000000' : 'rgba(0,0,0,0.35)')
+              : (i % 5 === 0 || i % 7 === 0 ? '#4b5560' : '#2a2d30'),
           }}
         />
       ))}
@@ -89,15 +67,22 @@ function MiniGrid({ count, size, active }) {
   )
 }
 
-export default function SetupPage({ onNext }) {
-  const [ratio, setRatio] = useState('1:1')
-  const [resolution, setResolution] = useState(16)
-  const grid = getGrid(ratio, resolution)
+export default function SetupPage({ onNext, onGoHome }) {
+  const [ratio, setRatio] = useState('square')
+  const [orientation, setOrientation] = useState('landscape')
+  const [levelIndex, setLevelIndex] = useState(0)
+
   const selectedRatio = RATIOS.find(r => r.id === ratio)
-  const selectedResolution = RESOLUTIONS.find(res => res.id === resolution)
+  const grid = getGrid(ratio, orientation, levelIndex)
+  const selectedLevel = LEVELS[levelIndex]
+
+  // 비율을 바꾸면 그 비율의 기본 방향으로 리셋
+  useEffect(() => {
+    if (selectedRatio.hasOrientation) setOrientation(selectedRatio.defaultOrientation)
+  }, [ratio]) // eslint-disable-line
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-gray-50">
+    <div className="relative h-screen w-screen overflow-hidden" style={{ background: PAGE_BG }}>
 
       {/* Scrollable main area */}
       <div className="relative z-10 h-full overflow-y-auto">
@@ -106,76 +91,82 @@ export default function SetupPage({ onNext }) {
 
             {/* Title */}
             <div className="text-center">
-              <h1 className="text-4xl sm:text-5xl font-black text-gray-900 leading-tight mb-2 sm:mb-3">
+              <h1 className="font-pixel whitespace-nowrap text-3xl sm:text-5xl leading-tight mb-4 sm:mb-6 text-white">
                 어떤 크기에 그릴까요?
               </h1>
-              <p className="text-base sm:text-lg text-gray-500">화면 비율과 픽셀 해상도를 골라요</p>
+              <p className="text-[1.1rem] sm:text-[1.2375rem] text-gray-400">화면 비율과 픽셀 해상도를 골라요</p>
             </div>
 
-            <div className="hidden sm:flex items-center justify-between rounded-3xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+            <div
+              className="hidden sm:flex items-center justify-between rounded-2xl px-5 py-4"
+              style={{ background: PANEL_BG }}
+            >
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
+                <div
+                  className="flex h-14 w-14 items-center justify-center rounded-xl border-2"
+                  style={{ borderColor: ACCENT }}
+                >
                   <div
-                    className="rounded"
+                    className="rounded-sm"
                     style={{
-                      width: selectedRatio.pw * 0.55,
-                      height: selectedRatio.ph * 0.55,
+                      width: getPreviewBox(ratio, orientation).w * 0.55,
+                      height: getPreviewBox(ratio, orientation).h * 0.55,
                       background: ACCENT,
                     }}
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-[0.825rem] font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
+                  <p className="font-pixel text-2xl text-white">
                     {selectedRatio.label} · {grid.cols} × {grid.rows}
                   </p>
                 </div>
               </div>
-              <span className={`rounded-xl px-4 py-2 text-sm font-bold ${selectedResolution.badgeClass}`}>
-                {selectedResolution.badge}
+              <span
+                className="font-pixel rounded-full px-5 py-2.5 text-lg text-black"
+                style={{ background: ACCENT }}
+              >
+                {selectedLevel.badge}
               </span>
             </div>
 
             {/* ── 비율 선택 ────────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+              <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 화면 비율
               </p>
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {RATIOS.map(r => {
                   const active = ratio === r.id
+                  const box = getPreviewBox(r.id, active ? orientation : r.defaultOrientation)
                   return (
                     <button
                       key={r.id}
                       onClick={() => setRatio(r.id)}
-                      className="flex flex-col items-center gap-2 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-xl sm:rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      style={{
-                        borderColor: active ? ACCENT : '#E5E7EB',
-                        background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
-                        boxShadow: active
-                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(16,185,129,0.18)`
-                          : '0 2px 8px rgba(0,0,0,0.04)',
-                      }}
+                      className="flex flex-col items-center gap-2 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-2xl transition-all active:scale-[0.98]"
+                      style={{ background: active ? ACCENT : PANEL_BG }}
                     >
                       {/* 비율 시각화 */}
                       <div className="flex items-end justify-center h-11 sm:h-16">
                         <div
-                          className="rounded transition-all"
+                          className="rounded-sm transition-all"
                           style={{
-                            width: `clamp(${Math.round(r.pw * 0.62)}px, 10vw, ${r.pw}px)`,
-                            height: `clamp(${Math.round(r.ph * 0.62)}px, 10vw, ${r.ph}px)`,
-                            background: active ? ACCENT : '#D1D5DB',
+                            width: `clamp(${Math.round(box.w * 0.62)}px, 10vw, ${box.w}px)`,
+                            height: `clamp(${Math.round(box.h * 0.62)}px, 10vw, ${box.h}px)`,
+                            background: active ? '#000000' : '#4b5560',
                           }}
                         />
                       </div>
                       <div className="text-center">
-                        <p
-                          className="text-base sm:text-xl font-bold"
-                          style={{ color: active ? ACCENT : '#374151' }}
-                        >
+                        <p className="font-pixel-kr text-xl sm:text-2xl" style={{ color: active ? '#000000' : '#e2e8f0' }}>
                           {r.label}
                         </p>
-                        <p className="hidden sm:block text-xs text-gray-400 mt-1 leading-snug">{r.sublabel}</p>
+                        <p
+                          className="hidden sm:block text-base mt-1.5 leading-snug"
+                          style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
+                        >
+                          {r.sublabel}
+                        </p>
                       </div>
                     </button>
                   )
@@ -183,45 +174,78 @@ export default function SetupPage({ onNext }) {
               </div>
             </div>
 
+            {/* ── 화면 방향 선택 (정사각형 제외) ───────────────────── */}
+            {selectedRatio.hasOrientation && (
+              <div>
+                <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+                  화면 방향
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  {[
+                    { id: 'landscape', label: '가로 방향' },
+                    { id: 'portrait',  label: '세로 방향' },
+                  ].map(o => {
+                    const active = orientation === o.id
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => setOrientation(o.id)}
+                        className="font-pixel py-3 sm:py-4 rounded-2xl text-[0.9625rem] sm:text-[1.1rem] transition-all active:scale-[0.98]"
+                        style={{
+                          background: active ? ACCENT : PANEL_BG,
+                          color: active ? '#000000' : '#e2e8f0',
+                        }}
+                      >
+                        {o.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* ── 해상도 선택 ──────────────────────────────────── */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
+              <p className="text-[0.825rem] font-bold text-gray-400 uppercase tracking-widest mb-3 sm:mb-4">
                 픽셀 해상도
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                {RESOLUTIONS.map(res => {
-                  const g = getGrid(ratio, res.id)
-                  const active = resolution === res.id
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                {LEVELS.map((lv, i) => {
+                  const g = getGrid(ratio, orientation, i)
+                  const active = levelIndex === i
                   return (
                     <button
-                      key={res.id}
-                      onClick={() => setResolution(res.id)}
-                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      style={{
-                        borderColor: active ? ACCENT : '#E5E7EB',
-                        background: active ? `rgba(16,185,129,0.08)` : '#FFFFFF',
-                        boxShadow: active
-                          ? `0 0 0 1px ${ACCENT}, 0 6px 24px rgba(16,185,129,0.18)`
-                          : '0 2px 8px rgba(0,0,0,0.04)',
-                      }}
+                      key={lv.badge}
+                      onClick={() => setLevelIndex(i)}
+                      className="flex flex-col items-center gap-2.5 sm:gap-4 py-4 sm:py-7 px-2 sm:px-4 rounded-2xl transition-all active:scale-[0.98]"
+                      style={{ background: active ? ACCENT : PANEL_BG }}
                     >
                       {/* 미니 픽셀 그리드 */}
-                      <MiniGrid count={res.dotCount} size={res.dotSize} active={active} />
+                      <MiniGrid count={lv.dotCount} size={lv.dotSize} active={active} />
 
                       {/* 격자 크기 */}
-                      <p
-                        className="text-xl sm:text-2xl font-bold tabular-nums"
-                        style={{ color: active ? ACCENT : '#374151' }}
-                      >
+                      <p className="font-pixel whitespace-nowrap text-xl sm:text-3xl tabular-nums" style={{ color: active ? '#000000' : '#e2e8f0' }}>
                         {g.cols} × {g.rows}
                       </p>
 
                       {/* 난이도 뱃지 */}
-                      <span className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-lg ${res.badgeClass}`}>
-                        {res.badge}
+                      <span
+                        className="font-pixel text-sm sm:text-base px-3.5 py-1.5 rounded-full"
+                        style={{
+                          background: active ? 'rgba(0,0,0,0.15)' : 'transparent',
+                          color: active ? '#000000' : ACCENT,
+                          border: active ? 'none' : `1px solid ${ACCENT}`,
+                        }}
+                      >
+                        {lv.badge}
                       </span>
 
-                      <p className="hidden sm:block text-xs text-gray-400 text-center leading-snug">{res.desc}</p>
+                      <p
+                        className="hidden sm:block text-base text-center leading-snug"
+                        style={{ color: active ? 'rgba(0,0,0,0.6)' : '#9ca3af' }}
+                      >
+                        {lv.desc}
+                      </p>
                     </button>
                   )
                 })}
@@ -229,18 +253,36 @@ export default function SetupPage({ onNext }) {
             </div>
 
             {/* CTA 버튼 */}
-            <div className="sticky bottom-0 -mx-6 flex justify-center bg-gradient-to-t from-gray-50 via-gray-50 to-gray-50/80 px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2">
+            <div
+              className="sticky bottom-0 -mx-6 flex items-center justify-center gap-3 px-6 pt-4 pb-3 sm:static sm:mx-0 sm:bg-none sm:px-0 sm:pt-0 sm:pb-2"
+              style={{ background: `linear-gradient(to top, ${PAGE_BG}, ${PAGE_BG}, transparent)` }}
+            >
               <button
-                onClick={() => onNext(grid)}
-                className="w-full sm:w-auto rounded-2xl text-lg sm:text-xl font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.97]"
-                style={{
-                  paddingTop: '1rem',
-                  paddingBottom: '1rem',
-                  paddingLeft: '5rem',
-                  paddingRight: '5rem',
-                  background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
-                  boxShadow: '0 4px 24px rgba(16,185,129,0.40)',
-                }}
+                onClick={onGoHome}
+                title="처음으로"
+                className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center transition-all hover:brightness-125 active:scale-[0.97]"
+                style={{ background: PANEL_BG, border: `1px solid ${ACCENT}` }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="w-7 h-7"
+                  style={{
+                    background: ACCENT,
+                    WebkitMaskImage: 'url(/images/home.png)',
+                    maskImage: 'url(/images/home.png)',
+                    WebkitMaskSize: 'contain',
+                    maskSize: 'contain',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskPosition: 'center',
+                    maskPosition: 'center',
+                  }}
+                />
+              </button>
+              <button
+                onClick={() => onNext({ ...grid, ratio, orientation })}
+                className="font-pixel flex-1 sm:flex-none sm:w-auto py-4 px-20 rounded-full text-[1.2375rem] sm:text-[1.375rem] text-black transition-all hover:brightness-105 active:scale-[0.97]"
+                style={{ background: ACCENT, boxShadow: '0 8px 24px rgba(247,208,112,0.25)' }}
               >
                 {grid.cols} × {grid.rows} 그리기 →
               </button>
