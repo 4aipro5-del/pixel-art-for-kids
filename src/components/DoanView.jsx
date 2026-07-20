@@ -188,17 +188,11 @@ export default function DoanView({ pixels, gridCols, gridRows, onClose }) {
         style={{ background: PAGE_BG, padding: 24 }}
       >
         {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4" style={{ minHeight: 260 }}>
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-              style={{ background: PANEL_BG }}
-            >
-              🎨
-            </div>
-            <p className="text-sm font-bold text-gray-500">캔버스에 그림을 먼저 그려주세요</p>
+          <div className="h-full flex flex-col items-center justify-center gap-4">
+            <p className="font-pixel-kr text-lg sm:text-xl font-bold text-gray-500">캔버스에 그림을 먼저 그려주세요</p>
             <button
               onClick={onClose}
-              className="text-xs font-semibold hover:underline"
+              className="font-pixel-kr text-xs font-semibold hover:underline"
               style={{ color: ACCENT_YELLOW }}
             >
               ← 편집으로 돌아가기

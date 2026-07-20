@@ -48,7 +48,7 @@ export default function SketchbookModal({ userName, onClose, onEdit }) {
       className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-gray-100">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl min-h-[400px] max-h-[80vh] flex flex-col border border-gray-100">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
@@ -66,17 +66,19 @@ export default function SketchbookModal({ userName, onClose, onEdit }) {
           </button>
         </div>
 
+        {/* 빈 상태 문구 — 헤더 아래 콘텐츠 영역만 기준으로 중앙 정렬하면 헤더 높이만큼 아래로
+            치우쳐 보여서, 모달 전체(inset-0)를 기준으로 절대 위치시켜 창 정중앙에 오도록 한다.
+            pointer-events-none이라 뒤에 있는 헤더의 닫기 버튼 클릭은 그대로 통과된다. */}
+        {items.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-gray-300">
+            <p className="font-pixel-kr text-lg sm:text-xl font-bold text-gray-400">아직 저장된 그림이 없어요</p>
+            <p className="font-pixel-kr text-xs text-gray-300 mt-1">그림을 그리면 자동으로 저장돼요!</p>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 overflow-auto p-5">
-          {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-300">
-              <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-2xl">📭</div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-gray-400">아직 저장된 그림이 없어요</p>
-                <p className="text-xs text-gray-300 mt-1">그림을 그리면 자동으로 저장돼요!</p>
-              </div>
-            </div>
-          ) : (
+          {items.length === 0 ? null : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {items.map(item => (
                 <div
