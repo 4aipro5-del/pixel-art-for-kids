@@ -35,6 +35,7 @@ const PRESET_COLORS = [
 
 const TOOLS = [
   { id: 'pen',        iconSrc: '/images/draw.png',       title: '펜' },
+  { id: 'bucket',     iconSrc: '/images/bucket.png',     title: '페인트통' },
   { id: 'eraser',     iconSrc: '/images/eraser.png',     title: '지우개' },
   { id: 'eyedropper', iconSrc: '/images/eyedropper.png', title: '스포이드' },
 ]
@@ -614,7 +615,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             {/* Tools */}
             <div className="rounded-2xl p-3" style={{ background: PANEL_BG }}>
               <SectionLabel>도구</SectionLabel>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
                 {TOOLS.map(t => {
                   const active = tool === t.id
                   return (
@@ -746,31 +747,11 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                     className="w-5 h-5 invert"
                   />
                 </button>
-                {/* 켜져 있으면 캔버스 위 드래그가 펜/지우개 대신 밑그림 위치 이동으로 처리된다
-                    (PixelCanvas의 투명 오버레이가 이 모드일 때만 포인터 이벤트를 가로챈다). */}
-                <button
-                  onClick={() => setTracingMoveMode(v => !v)}
-                  disabled={!tracingImage}
-                  aria-label={tracingMoveMode ? '밑그림 이동 모드 끄기' : '밑그림 위치 이동'}
-                  title={tracingMoveMode ? '밑그림 이동 모드 끄기' : '밑그림 위치 이동'}
-                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{
-                    background: tracingMoveMode ? ACCENT_YELLOW : PAGE_BG,
-                    border: `1px solid ${tracingMoveMode ? ACCENT_YELLOW : 'rgba(255,255,255,0.15)'}`,
-                  }}
-                >
-                  <svg
-                    viewBox="0 0 24 24" fill="none" strokeWidth={1.5} className="w-5 h-5"
-                    stroke={tracingMoveMode ? '#000000' : '#e5e7eb'}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v5m0 10v5M2 12h5m10 0h5M5 5l3 3M19 5l-3 3M5 19l3-3M19 19l-3-3" />
-                  </svg>
-                </button>
               </div>
               {/* 밑그림이 없을 때는 이 박스 자체가 업로드 드롭존 겸 클릭 버튼 역할을 한다 —
                   헤더의 전용 업로드 버튼을 없앤 대신, 밑그림을 다루는 이 영역 하나로 통합. */}
               <div
-                className="w-full h-32 rounded-xl overflow-hidden flex items-center justify-center mt-3 transition-colors"
+                className="relative w-full h-32 rounded-xl overflow-hidden flex items-center justify-center mt-3 transition-colors"
                 style={{
                   background: tracingImage ? '#ffffff' : PAGE_BG,
                   border: tracingImage ? 'none' : `1px dashed ${isDraggingTracing ? ACCENT_YELLOW : 'rgba(255,255,255,0.15)'}`,
@@ -782,11 +763,33 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                 onDrop={handleTracingDrop}
               >
                 {tracingImage ? (
-                  <img
-                    src={tracingImage}
-                    alt="원본 그림"
-                    className="w-full h-full object-contain"
-                  />
+                  <>
+                    <img
+                      src={tracingImage}
+                      alt="원본 그림"
+                      className="w-full h-full object-contain"
+                    />
+                    {/* 켜져 있으면 캔버스 위 드래그가 펜/지우개 대신 밑그림 위치 이동으로 처리된다
+                        (PixelCanvas의 투명 오버레이가 이 모드일 때만 포인터 이벤트를 가로챈다). */}
+                    <button
+                      onClick={e => { e.stopPropagation(); setTracingMoveMode(v => !v) }}
+                      aria-label={tracingMoveMode ? '밑그림 이동 모드 끄기' : '밑그림 위치 이동'}
+                      title={tracingMoveMode ? '밑그림 이동 모드 끄기' : '밑그림 위치 이동'}
+                      className="absolute flex items-center justify-center w-8 h-8 rounded-full shadow-lg transition-colors"
+                      style={{
+                        bottom: 8,
+                        right: 8,
+                        background: tracingMoveMode ? ACCENT_YELLOW : 'rgba(17,18,20,0.85)',
+                        border: `1px solid ${tracingMoveMode ? ACCENT_YELLOW : 'rgba(255,255,255,0.2)'}`,
+                      }}
+                    >
+                      <img
+                        src="/images/move.png"
+                        alt="밑그림 이동"
+                        className={`w-3.5 h-3.5 ${tracingMoveMode ? '' : 'invert'}`}
+                      />
+                    </button>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center gap-1.5 px-2 pointer-events-none">
                     <svg

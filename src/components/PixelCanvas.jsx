@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 export default function PixelCanvas({
   pixels, gridCols, gridRows,
@@ -207,6 +207,37 @@ export default function PixelCanvas({
       })
     }
 
+    // 렌더링과 동일한 규칙(null → 흰색)으로 정규화한 칸 색상 — 대소문자도 통일해
+    // '#FFFFFF'(펜으로 칠한 흰색)와 null(칠한 적 없는 흰색)을 같은 색으로 취급한다.
+    const getCellColor = (r, c) => (pixelsRef.current[r]?.[c] || '#ffffff').toLowerCase()
+
+    // 페인트통: 클릭한 칸과 4방향으로 이어진 동일 색상 영역을 스택 기반 BFS로 한 번에 채운다.
+    // 실제로 채운 칸이 있었는지를 반환해, 이미 같은 색인 영역을 클릭했을 때는 커밋을 건너뛴다.
+    const floodFill = (cell) => {
+      const rows = gridRowsRef.current
+      const cols = gridColsRef.current
+      const targetColor = getCellColor(cell.r, cell.c)
+      const fillColor = selectedColorRef.current
+      if (targetColor === fillColor.toLowerCase()) return false
+
+      const ctx = canvas.getContext('2d')
+      const cs = cellSizeRef.current
+      const stack = [[cell.r, cell.c]]
+      const visited = new Set()
+      while (stack.length) {
+        const [r, c] = stack.pop()
+        if (r < 0 || r >= rows || c < 0 || c >= cols) continue
+        const key = r * cols + c
+        if (visited.has(key)) continue
+        if (getCellColor(r, c) !== targetColor) continue
+        visited.add(key)
+        pixelsRef.current[r][c] = fillColor
+        drawCell(ctx, r, c, cs)
+        stack.push([r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1])
+      }
+      return true
+    }
+
     // ── pointerdown ───────────────────────────────────────────────────
     const onDown = (cx, cy) => {
       const cell = hitCell(cx, cy)
@@ -222,6 +253,16 @@ export default function PixelCanvas({
         }
         // null이면 아무 동작 없이 eyedropper 모드 유지 (사용자가 다시 클릭 가능)
         return                           // 어떤 경우에도 그리기는 실행 안 함
+      }
+
+      if (currentTool === 'bucket') {
+        // ── 페인트통: 드래그로 이어그리지 않는 단일 클릭 동작 ──
+        const changed = floodFill(cell)
+        if (changed) {
+          onCommitRef.current(pixelsRef.current.map(row => [...row]))
+          onPaintCompleteRef.current(selectedColorRef.current)
+        }
+        return
       }
 
       // ── PEN / ERASER: start drawing ─────────────────────────────────
@@ -294,6 +335,17 @@ export default function PixelCanvas({
   // pointerEvents: 'none'이라 캔버스 드로잉에는 전혀 영향을 주지 않는다 — 이벤트 충돌 없음.
   // (다른 그리기 로직처럼 ref를 쓰지 않는 이유: 이 핸들러들은 JSX에 인라인으로 매 렌더
   // 새로 만들어지므로 tracingOffset/onTracingOffsetChange가 항상 최신 값이다.)
+  // 호버 중엔 grab, 실제로 드래그하는 동안만 grabbing으로 바뀌도록 구분
+  const [isPanningTracing, setIsPanningTracing] = useState(false)
+
+  // 드래그 도중 이동 모드가 꺼지면(버튼을 다시 누르는 등) 드래그 상태가 붙잡혀 남지 않도록 정리
+  useEffect(() => {
+    if (!tracingMoveMode) {
+      tracingDragRef.current = null
+      setIsPanningTracing(false)
+    }
+  }, [tracingMoveMode])
+
   const handleTracingPointerDown = (e) => {
     if (!tracingMoveMode) return
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -303,6 +355,7 @@ export default function PixelCanvas({
       startY: e.clientY,
       startOffset: tracingOffset,
     }
+    setIsPanningTracing(true)
   }
   const handleTracingPointerMove = (e) => {
     const drag = tracingDragRef.current
@@ -316,6 +369,7 @@ export default function PixelCanvas({
     const drag = tracingDragRef.current
     if (!drag || drag.pointerId !== e.pointerId) return
     tracingDragRef.current = null
+    setIsPanningTracing(false)
   }
 
   return (
@@ -365,7 +419,7 @@ export default function PixelCanvas({
               position: 'absolute',
               inset: 0,
               touchAction: 'none',
-              cursor: tracingMoveMode ? 'grab' : 'auto',
+              cursor: tracingMoveMode ? (isPanningTracing ? 'grabbing' : 'grab') : 'auto',
               pointerEvents: tracingMoveMode ? 'auto' : 'none',
             }}
           />
