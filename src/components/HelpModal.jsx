@@ -50,6 +50,19 @@ function Icon({ src, alt }) {
   return <img src={src} alt={alt} className="w-6 h-6 invert flex-shrink-0" />
 }
 
+// Lucide "Plus" 아이콘(https://lucide.dev/icons/plus)을 그대로 재현한 인라인 SVG —
+// 사이드바 밑그림 업로드 박스(EditorPage.jsx)의 + 아이콘과 동일한 모양으로 통일한다.
+function PlusIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" strokeWidth={2}
+      strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 flex-shrink-0"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
 export default function HelpModal({ onClose }) {
   return (
     <div
@@ -91,9 +104,10 @@ export default function HelpModal({ onClose }) {
               </Row>
 
               <ExpandableRow
-                icon={<Icon src="/images/tracing.png" alt="밑그림 불러오기" />}
-                summary="그림판 밑에 참고할 사진을 깔고 투명도를 조절해요."
+                icon={<PlusIcon />}
+                summary="캔버스 배경에 참고할 사진을 불러오고 위치나 크기를 조절해요."
                 details={[
+                  '사이드바 박스를 클릭하거나 이미지를 드래그해서 밑그림을 불러와요.',
                   '사이드바에서 크기를 조절할 수 있어요.',
                   <>
                     눈 버튼(
@@ -102,6 +116,7 @@ export default function HelpModal({ onClose }) {
                     <img src="/images/hide.png" alt="숨기기" className="inline-block w-4 h-4 mx-0.5 invert align-text-bottom" />
                     : 숨기기)으로 밑그림을 보이거나 숨길 수 있어요.
                   </>,
+                  '미리보기 우측 하단의 이동 버튼(✜)을 누르고 캔버스를 드래그하여 밑그림 위치를 옮겨요.',
                 ]}
               />
 

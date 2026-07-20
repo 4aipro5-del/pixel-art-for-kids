@@ -114,6 +114,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const [recentColors, setRecentColors] = useState([])
   const [tool, setTool] = useState('pen')
   const [zoom, setZoom] = useState(1)
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false) // 모바일 폭에서 도구/색상 사이드바를 하단 시트로 접었다 폈다 하는 토글
   const [showSketchbook, setShowSketchbook] = useState(false)
   const [showBackModal, setShowBackModal] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
@@ -603,11 +604,27 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
           <DoanView pixels={pixels} gridCols={gridCols} gridRows={gridRows} onClose={() => setDoanMode(false)} />
         ) : (<>
 
+        {/* 모바일 폭(md 미만)에서 사이드바가 하단 시트로 열려 있을 때 배경을 덮어 캔버스 조작을
+            막고, 탭하면 닫히게 한다 — 데스크톱에서는 사이드바가 항상 열려 있어 필요 없다. */}
+        {mobileToolsOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-30"
+            style={{ background: 'rgba(0,0,0,0.5)' }}
+            onClick={() => setMobileToolsOpen(false)}
+          />
+        )}
+
         {/* ── Left Sidebar ───────────────────────── */}
-        {/* scrollbarGutter: 'stable' — 최근 색상 등 콘텐츠 높이가 늘어 스크롤바가 나타나도
+        {/* 모바일: 화면 하단에서 올라오는 시트로 접혀 있다가 토글 버튼으로 열림(캔버스 공간을
+            침범하지 않도록 기본 상태에서는 화면 밖으로 완전히 내려가 있음, fixed라 레이아웃도
+            차지하지 않는다). md 이상: 기존처럼 항상 펼쳐진 좌측 고정 폭 사이드바.
+            scrollbarGutter: 'stable' — 최근 색상 등 콘텐츠 높이가 늘어 스크롤바가 나타나도
             내부 폭이 줄어들며 도구 모음이 덜컥이지 않도록 스크롤바 공간을 항상 예약해둔다. */}
         <aside
-          className="flex w-60 flex-col flex-shrink-0 overflow-y-auto"
+          className={`flex flex-col overflow-y-auto transition-transform duration-300 z-40
+            fixed inset-x-0 bottom-0 max-h-[75vh] rounded-t-2xl
+            md:static md:inset-auto md:z-auto md:max-h-none md:rounded-none md:w-60 md:flex-shrink-0 md:translate-y-0
+            ${mobileToolsOpen ? 'translate-y-0' : 'translate-y-full'}`}
           style={{ background: PAGE_BG, borderRight: '1px solid rgba(255,255,255,0.08)', scrollbarGutter: 'stable' }}
         >
           <div className="flex flex-col gap-4 p-4 flex-1">
@@ -848,7 +865,10 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
         </aside>
 
         {/* ── Canvas area ────────────────────────── */}
-        <div className="flex flex-1 relative items-center justify-center p-8 overflow-auto">
+        {/* 모바일 패딩을 대폭 줄여(p-3) 캔버스가 화면 대부분을 차지하도록 하고, md 이상에서는
+            기존 여백(p-8)을 유지한다. PixelCanvas는 이 컨테이너의 clientWidth/Height를 그대로
+            기준 삼아 칸 크기를 계산하므로, 이 패딩을 줄이는 것만으로 캔버스가 실제로 커진다. */}
+        <div className="flex flex-1 relative items-center justify-center p-3 md:p-8 overflow-auto">
           <PixelCanvas
             pixels={pixels}
             gridCols={gridCols}
@@ -867,6 +887,24 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             tracingMoveMode={tracingMoveMode}
             onTracingOffsetChange={setTracingOffset}
           />
+
+          {/* 모바일 전용 도구 패널 토글 — 사이드바가 하단 시트로 접혀 있을 때 이걸로 열고 닫는다 */}
+          <button
+            onClick={() => setMobileToolsOpen(v => !v)}
+            aria-label={mobileToolsOpen ? '도구 패널 닫기' : '도구 패널 열기'}
+            title={mobileToolsOpen ? '도구 패널 닫기' : '도구 패널 열기'}
+            className="md:hidden fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+            style={{ background: ACCENT_YELLOW }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth={2} strokeLinecap="round" className="w-6 h-6">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+              <circle cx="9" cy="6" r="1.6" fill="#000000" stroke="none" />
+              <circle cx="15" cy="12" r="1.6" fill="#000000" stroke="none" />
+              <circle cx="9" cy="18" r="1.6" fill="#000000" stroke="none" />
+            </svg>
+          </button>
         </div>
         </>)}
       </div>
