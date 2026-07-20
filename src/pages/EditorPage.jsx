@@ -126,8 +126,9 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const [isDirty, setIsDirty] = useState(false)
   const toastTimer = useRef(null)
   const prevToolRef = useRef('pen')  // eyedrop 취소 시 이전 도구 복원용
-  const headerTracingInputRef = useRef(null)
+  const sidebarTracingInputRef = useRef(null)
   const saveFileInputRef = useRef(null)
+  const [isDraggingTracing, setIsDraggingTracing] = useState(false) // 밑그림 박스 위로 파일을 드래그 중인지
 
   // 자동 저장이 덮어쓸 스케치북 항목의 고유 ID. 불러온 작품이면 그 ID를 그대로 이어받고,
   // 새로 시작한 캔버스면 이 세션 동안 고정되는 새 ID를 발급해 매번 새 항목이 쌓이지 않게 한다.
@@ -137,13 +138,29 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   // 이중 실행 포함) 실제 편집이 아니므로 자동 저장을 건너뛴다.
   const lastQueuedPixelsRef = useRef(pixels)
   const [saveStatus, setSaveStatus] = useState(resumeArtwork ? 'saved' : 'idle') // 'idle' | 'pending' | 'saved'
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const handleTracingUpload = (e) => {
-    const file = e.target.files[0]
+  // 브라우저 자체 ESC 키 등으로도 전체화면이 풀릴 수 있어, fullscreenchange를 구독해
+  // 버튼 아이콘/상태를 실제 전체화면 여부와 항상 동기화한다.
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [])
+
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {})
+    } else {
+      document.exitFullscreen?.().catch(() => {})
+    }
+  }, [])
+
+  // 파일 입력(클릭)과 드래그 앤 드롭이 같은 검증·로드 로직을 공유하도록 분리
+  const processTracingFile = (file) => {
     if (!file) return
-    if (!['image/png', 'image/jpeg'].includes(file.type)) {
-      alert('PNG 또는 JPG 파일만 업로드할 수 있어요!')
-      e.target.value = ''
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      alert('PNG, JPG 또는 WebP 파일만 업로드할 수 있어요!')
       return
     }
     // 도안이 깔리기 직전 상태(그림+밑그림)를 강제로 되돌리기 지점에 밀어 넣는다 —
@@ -157,7 +174,20 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
       setTracingImage(ev.target.result)
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleTracingUpload = (e) => {
+    processTracingFile(e.target.files[0])
     e.target.value = ''
+  }
+
+  // 밑그림이 없을 때만 드롭으로 새 이미지를 받는다 — 이미지가 있으면
+  // 미리보기 박스가 순수 미리보기 역할이라 드롭을 무시한다.
+  const handleTracingDrop = (e) => {
+    e.preventDefault()
+    setIsDraggingTracing(false)
+    if (tracingImage) return
+    processTracingFile(e.dataTransfer.files?.[0])
   }
 
   // 밑그림이 사라지면(전체 지우기·되돌리기·다시하기로 tracingImage → null이 되는 모든 경로 포함)
@@ -192,10 +222,15 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const handleEyedrop = async (currentTool) => {
     prevToolRef.current = currentTool  // ESC 취소 시 복원할 도구 저장
 
-    if (!('EyeDropper' in window)) {
-      // Safari 등 미지원 브라우저 → 기존 캔버스 스포이드 모드로 자동 전환
+    // 터치 기기(크롬북 터치스크린 등)는 window.EyeDropper가 존재해도 그 오버레이가
+    // 마우스 이벤트 기준으로 동작해 터치 입력을 인식하지 못하는 경우가 있다 —
+    // 터치가 가능한 기기에서는 항상 캔버스 폴백 스포이드(PixelCanvas의 Pointer Events 기반
+    // 좌표 계산)로 처리한다.
+    const isTouchCapable = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    if (!('EyeDropper' in window) || isTouchCapable) {
+      // Safari 등 미지원 브라우저 또는 터치 기기 → 캔버스 스포이드 모드로 전환
       setTool('eyedropper')
-      showToast('캔버스를 클릭해 색상을 추출하세요')
+      showToast('캔버스를 눌러 색상을 추출하세요')
       return
     }
 
@@ -371,12 +406,20 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     setShowClearModal(false)
   }
 
-  const handleConfirmSavePNG = useCallback(() => {
+  // data: URI를 <a href>로 직접 다운로드하면 크롬(특히 크롬북)이 큰 data URI를
+  // "위험할 수 있어 저장되지 않았습니다" 류의 경고로 막는 경우가 있어, 이미 있는
+  // getCanvasBlob(Blob 기반)을 ObjectURL로 감싸서 다운로드한다.
+  const handleConfirmSavePNG = useCallback(async () => {
     const name = saveFileName.trim() || buildDefaultFileName()
-    const a = document.createElement('a')
-    a.href = getDataURL(512)
-    a.download = `${name}.png`
-    a.click()
+    const blob = await getCanvasBlob(512)
+    if (blob) {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${name}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
 
     // 스케치북 목록에 이름 기준으로 저장 — 같은 이름이면 덮어쓰기(Update), 다르면 새 항목(Save As = 새 슬롯)
     const all = JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
@@ -399,7 +442,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     setSaveStatus('saved')
 
     setIsSaveModalOpen(false)
-  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getDataURL, userName])
+  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getCanvasBlob, userName])
 
   // 실시간 자동 저장: 그림이 바뀔 때마다 500ms 디바운스 후 localStorage 스케치북을
   // 현재 프로젝트 ID로 덮어쓴다. pixels 참조가 마지막 예약 시점과 같으면(최초 마운트,
@@ -530,16 +573,6 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
               사용법 안내
             </button>
             <div className="w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <HeaderBtn onClick={() => headerTracingInputRef.current?.click()} title="밑그림 불러오기">
-              <img src="/images/tracing.png" alt="밑그림 불러오기" className="w-5 h-5 invert" />
-            </HeaderBtn>
-            <input
-              ref={headerTracingInputRef}
-              type="file"
-              accept="image/png, image/jpeg"
-              className="hidden"
-              onChange={handleTracingUpload}
-            />
             <HeaderBtn onClick={handleOpenSketchbook} title="나의 스케치북">
               <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
             </HeaderBtn>
@@ -551,6 +584,16 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             </HeaderBtn>
             <HeaderBtn onClick={openSaveModal} title="PNG 저장">
               <img src="/images/downloads.png" alt="PNG 저장" className="w-5 h-5 invert" />
+            </HeaderBtn>
+            <div className="w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <HeaderBtn onClick={handleToggleFullscreen} title={isFullscreen ? '전체화면 종료' : '전체화면'}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
+                {isFullscreen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5M15 15l5.25 5.25" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9M20.25 20.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                )}
+              </svg>
             </HeaderBtn>
           </div>
 
@@ -564,9 +607,11 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
         ) : (<>
 
         {/* ── Left Sidebar ───────────────────────── */}
+        {/* scrollbarGutter: 'stable' — 최근 색상 등 콘텐츠 높이가 늘어 스크롤바가 나타나도
+            내부 폭이 줄어들며 도구 모음이 덜컥이지 않도록 스크롤바 공간을 항상 예약해둔다. */}
         <aside
           className="flex w-60 flex-col flex-shrink-0 overflow-y-auto"
-          style={{ background: PAGE_BG, borderRight: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ background: PAGE_BG, borderRight: '1px solid rgba(255,255,255,0.08)', scrollbarGutter: 'stable' }}
         >
           <div className="flex flex-col gap-4 p-4 flex-1">
 
@@ -706,12 +751,19 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                   />
                 </button>
               </div>
+              {/* 밑그림이 없을 때는 이 박스 자체가 업로드 드롭존 겸 클릭 버튼 역할을 한다 —
+                  헤더의 전용 업로드 버튼을 없앤 대신, 밑그림을 다루는 이 영역 하나로 통합. */}
               <div
-                className="w-full h-32 rounded-xl overflow-hidden flex items-center justify-center mt-3"
+                className="w-full h-32 rounded-xl overflow-hidden flex items-center justify-center mt-3 transition-colors"
                 style={{
                   background: tracingImage ? '#ffffff' : PAGE_BG,
-                  border: tracingImage ? 'none' : '1px dashed rgba(255,255,255,0.15)',
+                  border: tracingImage ? 'none' : `1px dashed ${isDraggingTracing ? ACCENT_YELLOW : 'rgba(255,255,255,0.15)'}`,
+                  cursor: tracingImage ? 'default' : 'pointer',
                 }}
+                onClick={() => { if (!tracingImage) sidebarTracingInputRef.current?.click() }}
+                onDragOver={e => { e.preventDefault(); if (!tracingImage) setIsDraggingTracing(true) }}
+                onDragLeave={() => setIsDraggingTracing(false)}
+                onDrop={handleTracingDrop}
               >
                 {tracingImage ? (
                   <img
@@ -720,11 +772,26 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <p className="font-code text-xs text-gray-500 text-center px-2 leading-relaxed whitespace-nowrap">
-                    밑그림을 불러오면<br />원본 이미지가 여기 보여요
-                  </p>
+                  <div className="flex flex-col items-center gap-1.5 px-2 pointer-events-none">
+                    <svg
+                      viewBox="0 0 24 24" fill="none" strokeWidth={2} className="w-6 h-6"
+                      stroke={isDraggingTracing ? ACCENT_YELLOW : '#6b7280'}
+                    >
+                      <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+                    </svg>
+                    <p className="font-code text-xs text-gray-500 text-center leading-relaxed">
+                      밑그림 불러오기<br />(클릭 또는 이미지 드래그)
+                    </p>
+                  </div>
                 )}
               </div>
+              <input
+                ref={sidebarTracingInputRef}
+                type="file"
+                accept="image/*, image/webp"
+                className="hidden"
+                onChange={handleTracingUpload}
+              />
             </div>
 
             {/* Zoom */}

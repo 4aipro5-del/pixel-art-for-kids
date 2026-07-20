@@ -117,7 +117,7 @@ export default function SetupPage({ onNext, onGoHome }) {
                 </div>
                 <div>
                   <p className="text-[0.825rem] font-bold uppercase tracking-widest text-gray-400">선택한 캔버스</p>
-                  <p className="font-pixel text-2xl text-white">
+                  <p className="font-pixel-kr text-2xl text-white">
                     {selectedRatio.label} · {grid.cols} × {grid.rows}
                   </p>
                 </div>
