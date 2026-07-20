@@ -5,12 +5,14 @@ export default function PixelCanvas({
   selectedColor, tool, brushSize, zoom,
   onCommit, onColorPick, onPaintComplete,
   tracingImage, tracingOpacity, tracingScale = 1,
+  tracingOffset = { x: 0, y: 0 }, tracingMoveMode = false, onTracingOffsetChange,
 }) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const pixelsRef = useRef(null)
   const cellSizeRef = useRef(20)
   const baseCellSizeRef = useRef(20)
+  const tracingDragRef = useRef(null) // 밑그림 이동 드래그 중 { pointerId, startX, startY, startOffset }
 
   // ── Stable refs (always current, no stale closures) ──────────────────
   const selectedColorRef = useRef(selectedColor)
@@ -287,6 +289,35 @@ export default function PixelCanvas({
     }
   }, []) // ← 의도적 빈 deps: 모든 값을 ref로 읽으므로 재등록 불필요
 
+  // ── 밑그림 이동(Pan) — 그리기 이벤트와는 완전히 분리된 별도 오버레이 엘리먼트가
+  // tracingMoveMode일 때만 pointerEvents를 받아 처리한다. 이 모드가 꺼져 있으면
+  // pointerEvents: 'none'이라 캔버스 드로잉에는 전혀 영향을 주지 않는다 — 이벤트 충돌 없음.
+  // (다른 그리기 로직처럼 ref를 쓰지 않는 이유: 이 핸들러들은 JSX에 인라인으로 매 렌더
+  // 새로 만들어지므로 tracingOffset/onTracingOffsetChange가 항상 최신 값이다.)
+  const handleTracingPointerDown = (e) => {
+    if (!tracingMoveMode) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    tracingDragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startOffset: tracingOffset,
+    }
+  }
+  const handleTracingPointerMove = (e) => {
+    const drag = tracingDragRef.current
+    if (!drag || drag.pointerId !== e.pointerId) return
+    onTracingOffsetChange?.({
+      x: drag.startOffset.x + (e.clientX - drag.startX),
+      y: drag.startOffset.y + (e.clientY - drag.startY),
+    })
+  }
+  const handleTracingPointerUp = (e) => {
+    const drag = tracingDragRef.current
+    if (!drag || drag.pointerId !== e.pointerId) return
+    tracingDragRef.current = null
+  }
+
   return (
     <div
       ref={containerRef}
@@ -305,7 +336,9 @@ export default function PixelCanvas({
               height: '100%',
               objectFit: 'contain',
               opacity: tracingOpacity,
-              transform: `scale(${tracingScale})`,
+              // translate가 scale 바깥에 있어야 확대 배율과 무관하게 드래그한 픽셀만큼
+              // 그대로 이동한다 (화면 이동량 = 실제 이동량, 1:1 드래그 느낌).
+              transform: `translate(${tracingOffset.x}px, ${tracingOffset.y}px) scale(${tracingScale})`,
               transformOrigin: 'center',
               pointerEvents: 'none',
             }}
@@ -320,6 +353,23 @@ export default function PixelCanvas({
             display: 'block',
           }}
         />
+        {/* 밑그림 이동 오버레이 — tracingMoveMode가 아니면 pointerEvents: 'none'이라
+            아래 캔버스의 그리기 이벤트를 그대로 통과시킨다. */}
+        {tracingImage && (
+          <div
+            onPointerDown={handleTracingPointerDown}
+            onPointerMove={handleTracingPointerMove}
+            onPointerUp={handleTracingPointerUp}
+            onPointerCancel={handleTracingPointerUp}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              touchAction: 'none',
+              cursor: tracingMoveMode ? 'grab' : 'auto',
+              pointerEvents: tracingMoveMode ? 'auto' : 'none',
+            }}
+          />
+        )}
       </div>
     </div>
   )

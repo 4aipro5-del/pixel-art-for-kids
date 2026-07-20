@@ -12,6 +12,10 @@ const ACCENT_YELLOW = '#f7d070'
 const DANGER = '#f87171'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
+// 저해상도 그리드(예: 28×21, 32×32)를 그대로 저장하면 결과물이 작고 흐릿하게 보인다 —
+// 항상 최소 1024px, 칸당 최소 32px로 업스케일한 오프스크린 캔버스에 다시 그려 내보낸다.
+const EXPORT_MIN_PX = 1024
+const EXPORT_MIN_CELL_PX = 32
 
 // 크레파스 톤 12색 팔레트 (형광기를 빼고 연두/초록/하늘 경계를 명확히 구분)
 const PRESET_COLORS = [
@@ -121,6 +125,8 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const [tracingOpacity, setTracingOpacity] = useState(0.25)
   const [tracingScale, setTracingScale] = useState(1) // 밑그림 크기 조절 슬라이더 — 1 = 100%
   const [tracingVisible, setTracingVisible] = useState(true) // 눈동자 토글 — 잠시 숨기기(불투명도만 0으로, 크기값은 보존)
+  const [tracingOffset, setTracingOffset] = useState({ x: 0, y: 0 }) // 밑그림 위치 이동(px, CSS 픽셀 기준)
+  const [tracingMoveMode, setTracingMoveMode] = useState(false) // true면 캔버스 드래그가 펜/지우개 대신 밑그림 이동으로 처리됨
   // 펜/지우개/채우기 등으로 실제 캔버스를 한 번이라도 변경했는지 — false인 동안은 아무 작업도
   // 안 한 빈 캔버스이므로 스케치북에 저장하지 않는다(handleCommit에서만 true로 전환).
   const [isDirty, setIsDirty] = useState(false)
@@ -172,6 +178,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
       setHistory(prev => [...prev.slice(-(MAX_HISTORY - 1)), { pixels: beforePixels, tracingImage: beforeTracingImage }])
       setFuture([])
       setTracingImage(ev.target.result)
+      setTracingOffset({ x: 0, y: 0 }) // 새로 불러온 밑그림은 이전 이미지의 위치를 물려받지 않고 중앙에서 시작
     }
     reader.readAsDataURL(file)
   }
@@ -196,6 +203,8 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     if (!tracingImage) {
       setTracingScale(1)
       setTracingVisible(true)
+      setTracingOffset({ x: 0, y: 0 })
+      setTracingMoveMode(false)
     }
   }, [tracingImage])
 
@@ -248,14 +257,13 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     }
   }
 
-  // minPx=1 → 원본 해상도, minPx≥512 → 업스케일(다운로드/공유용) data URL
-  const getDataURL = useCallback((minPx = 1) => {
-    const scale = minPx <= 1 ? 1 : Math.max(1, Math.ceil(minPx / Math.min(gridCols, gridRows)))
+  const renderExportCanvas = useCallback(() => {
+    const scale = Math.max(EXPORT_MIN_CELL_PX, Math.ceil(EXPORT_MIN_PX / Math.min(gridCols, gridRows)))
     const off = document.createElement('canvas')
     off.width = gridCols * scale
     off.height = gridRows * scale
     const ctx = off.getContext('2d')
-    ctx.imageSmoothingEnabled = false
+    ctx.imageSmoothingEnabled = false // 칸을 확대해도 경계가 흐려지지 않고 또렷하게 유지
     ctx.fillStyle = '#FFFFFF'
     ctx.fillRect(0, 0, off.width, off.height)
     for (let r = 0; r < gridRows; r++) {
@@ -266,29 +274,17 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
         }
       }
     }
-    return off.toDataURL('image/png')
+    return off
   }, [pixels, gridCols, gridRows])
 
+  const getDataURL = useCallback(() => (
+    renderExportCanvas().toDataURL('image/png')
+  ), [renderExportCanvas])
+
   // 붙여넣기용 PNG Blob — 클립보드 API는 Blob(또는 Blob을 반환하는 Promise)만 받는다.
-  const getCanvasBlob = useCallback((minPx = 512) => {
-    const scale = Math.max(1, Math.ceil(minPx / Math.min(gridCols, gridRows)))
-    const off = document.createElement('canvas')
-    off.width = gridCols * scale
-    off.height = gridRows * scale
-    const ctx = off.getContext('2d')
-    ctx.imageSmoothingEnabled = false
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillRect(0, 0, off.width, off.height)
-    for (let r = 0; r < gridRows; r++) {
-      for (let c = 0; c < gridCols; c++) {
-        if (pixels[r][c]) {
-          ctx.fillStyle = pixels[r][c]
-          ctx.fillRect(c * scale, r * scale, scale, scale)
-        }
-      }
-    }
-    return new Promise(resolve => off.toBlob(resolve, 'image/png'))
-  }, [pixels, gridCols, gridRows])
+  const getCanvasBlob = useCallback(() => (
+    new Promise(resolve => renderExportCanvas().toBlob(resolve, 'image/png'))
+  ), [renderExportCanvas])
 
   // [그림 복사하기] — Safari 등에서 "사용자 클릭 안에서 동기적으로 호출"해야 하는
   // 제약이 있어, blob을 미리 await하지 않고 Promise 그대로 ClipboardItem에 넘긴다.
@@ -299,7 +295,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     }
     try {
       await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': getCanvasBlob(512) }),
+        new ClipboardItem({ 'image/png': getCanvasBlob() }),
       ])
       showToast('복사 완료! 원하는 곳에 바로 붙여넣기 하세요')
     } catch (err) {
@@ -411,7 +407,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   // getCanvasBlob(Blob 기반)을 ObjectURL로 감싸서 다운로드한다.
   const handleConfirmSavePNG = useCallback(async () => {
     const name = saveFileName.trim() || buildDefaultFileName()
-    const blob = await getCanvasBlob(512)
+    const blob = await getCanvasBlob()
     if (blob) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -750,6 +746,26 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                     className="w-5 h-5 invert"
                   />
                 </button>
+                {/* 켜져 있으면 캔버스 위 드래그가 펜/지우개 대신 밑그림 위치 이동으로 처리된다
+                    (PixelCanvas의 투명 오버레이가 이 모드일 때만 포인터 이벤트를 가로챈다). */}
+                <button
+                  onClick={() => setTracingMoveMode(v => !v)}
+                  disabled={!tracingImage}
+                  aria-label={tracingMoveMode ? '밑그림 이동 모드 끄기' : '밑그림 위치 이동'}
+                  title={tracingMoveMode ? '밑그림 이동 모드 끄기' : '밑그림 위치 이동'}
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: tracingMoveMode ? ACCENT_YELLOW : PAGE_BG,
+                    border: `1px solid ${tracingMoveMode ? ACCENT_YELLOW : 'rgba(255,255,255,0.15)'}`,
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24" fill="none" strokeWidth={1.5} className="w-5 h-5"
+                    stroke={tracingMoveMode ? '#000000' : '#e5e7eb'}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v5m0 10v5M2 12h5m10 0h5M5 5l3 3M19 5l-3 3M5 19l3-3M19 19l-3-3" />
+                  </svg>
+                </button>
               </div>
               {/* 밑그림이 없을 때는 이 박스 자체가 업로드 드롭존 겸 클릭 버튼 역할을 한다 —
                   헤더의 전용 업로드 버튼을 없앤 대신, 밑그림을 다루는 이 영역 하나로 통합. */}
@@ -844,6 +860,9 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             tracingImage={tracingImage}
             tracingOpacity={tracingVisible ? tracingOpacity : 0}
             tracingScale={tracingScale}
+            tracingOffset={tracingOffset}
+            tracingMoveMode={tracingMoveMode}
+            onTracingOffsetChange={setTracingOffset}
           />
         </div>
         </>)}
