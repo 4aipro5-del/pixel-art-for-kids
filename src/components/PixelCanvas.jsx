@@ -25,6 +25,8 @@ export default function PixelCanvas({
   // gridCols/gridRows are also needed inside event handlers via refs
   const gridColsRef = useRef(gridCols)
   const gridRowsRef = useRef(gridRows)
+  const tracingOffsetRef = useRef(tracingOffset)
+  const onTracingOffsetChangeRef = useRef(onTracingOffsetChange)
 
   selectedColorRef.current = selectedColor
   toolRef.current = tool
@@ -35,6 +37,19 @@ export default function PixelCanvas({
   onPaintCompleteRef.current = onPaintComplete
   gridColsRef.current = gridCols
   gridRowsRef.current = gridRows
+  tracingOffsetRef.current = tracingOffset
+  onTracingOffsetChangeRef.current = onTracingOffsetChange
+
+  // 캔버스 실제 렌더 크기(cellSize)가 바뀌면(전체화면 진입/해제, 창 크기 변경, 확대 슬라이더 등)
+  // 밑그림 드래그 오프셋도 같은 비율로 리스케일해야, 두 레이어가 같이 확대·이동한 것처럼 보인다.
+  // 오프셋은 화면 px 절대값으로 저장되므로 그대로 두면 캔버스만 커지고 밑그림 위치는 고정돼 어긋난다.
+  function rescaleTracingOffset(oldCellSize, newCellSize) {
+    if (oldCellSize <= 0 || newCellSize === oldCellSize) return
+    const off = tracingOffsetRef.current
+    if (!off || (off.x === 0 && off.y === 0)) return
+    const scale = newCellSize / oldCellSize
+    onTracingOffsetChangeRef.current?.({ x: off.x * scale, y: off.y * scale })
+  }
 
   // ── Sync pixels prop → internal ref ──────────────────────────────────
   useEffect(() => {
@@ -67,9 +82,12 @@ export default function PixelCanvas({
         Math.floor(availH / gridRows),
       ))
       baseCellSizeRef.current = base
-      cellSizeRef.current = Math.max(1, Math.round(base * zoomRef.current))
-      applyCanvasSize(canvas, gridCols * cellSizeRef.current, gridRows * cellSizeRef.current)
+      const oldCellSize = cellSizeRef.current
+      const newCellSize = Math.max(1, Math.round(base * zoomRef.current))
+      cellSizeRef.current = newCellSize
+      applyCanvasSize(canvas, gridCols * newCellSize, gridRows * newCellSize)
       redrawAll()
+      rescaleTracingOffset(oldCellSize, newCellSize)
     }
     resize()
     const ro = new ResizeObserver(resize)
@@ -81,9 +99,12 @@ export default function PixelCanvas({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    cellSizeRef.current = Math.max(1, Math.round(baseCellSizeRef.current * zoom))
-    applyCanvasSize(canvas, gridCols * cellSizeRef.current, gridRows * cellSizeRef.current)
+    const oldCellSize = cellSizeRef.current
+    const newCellSize = Math.max(1, Math.round(baseCellSizeRef.current * zoom))
+    cellSizeRef.current = newCellSize
+    applyCanvasSize(canvas, gridCols * newCellSize, gridRows * newCellSize)
     redrawAll()
+    rescaleTracingOffset(oldCellSize, newCellSize)
   }, [zoom]) // eslint-disable-line
 
   // ── Cursor ────────────────────────────────────────────────────────────

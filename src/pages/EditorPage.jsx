@@ -229,9 +229,17 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     toastTimer.current = setTimeout(() => setToast(null), 2500)
   }, []) // state setters are stable — no deps needed
 
+  // 도구를 바꿀 때는 항상 "밑그림 이동" 모드를 함께 꺼서, 이동 모드가 캔버스 위 오버레이로
+  // 남아 포인터 이벤트를 가로채고(그리기/스포이드가 먹통이 되고 커서도 grab으로 고정되는 원인) 있지 않게 한다.
+  const selectTool = (id) => {
+    setTracingMoveMode(false)
+    setTool(id)
+  }
+
   // EyeDropper API: 화면 어디서든 색상 추출
   const handleEyedrop = async (currentTool) => {
     prevToolRef.current = currentTool  // ESC 취소 시 복원할 도구 저장
+    setTracingMoveMode(false)  // 밑그림 이동 모드가 켜져 있으면 스포이드 클릭이 가로막히므로 항상 꺼둔다
 
     // 터치 기기(크롬북 터치스크린 등)는 window.EyeDropper가 존재해도 그 오버레이가
     // 마우스 이벤트 기준으로 동작해 터치 입력을 인식하지 못하는 경우가 있다 —
@@ -646,7 +654,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                   return (
                     <button
                       key={t.id}
-                      onClick={() => t.id === 'eyedropper' ? handleEyedrop(tool) : setTool(t.id)}
+                      onClick={() => t.id === 'eyedropper' ? handleEyedrop(tool) : selectTool(t.id)}
                       title={t.title}
                       className="flex items-center justify-center py-2.5 rounded-full text-lg transition-colors duration-200"
                       style={{
