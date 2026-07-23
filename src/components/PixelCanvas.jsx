@@ -14,6 +14,11 @@ export default function PixelCanvas({
   const cellSizeRef = useRef(20)
   const baseCellSizeRef = useRef(20)
   const tracingDragRef = useRef(null) // 밑그림 이동 드래그 중 { pointerId, startX, startY, startOffset }
+  // 스포이드 돋보기(데스크탑 네이티브 EyeDropper의 확대 미리보기를 흉내) — 위치/그리기는
+  // React state가 아니라 직접 DOM 조작으로 처리해 커서 이동마다 리렌더가 일어나지 않게 한다.
+  const loupeWrapRef = useRef(null)
+  const loupeCanvasRef = useRef(null)
+  const hideLoupeRef = useRef(() => {})
 
   // ── Stable refs (always current, no stale closures) ──────────────────
   const selectedColorRef = useRef(selectedColor)
@@ -134,6 +139,7 @@ export default function PixelCanvas({
     canvas.style.cursor =
       tool === 'eyedropper' ? "url('/images/eyedropper-cursor.png') 2 30, copy" :
       tool === 'eraser' ? 'cell' : 'crosshair'
+    if (tool !== 'eyedropper') hideLoupeRef.current()
   }, [tool])
 
   // ── Drawing helpers ───────────────────────────────────────────────────
@@ -330,13 +336,72 @@ export default function PixelCanvas({
       paint(cell)
     }
 
+    // ── 스포이드 돋보기(loupe) ───────────────────────────────────────────
+    // 커서 주변을 격자 형태로 확대해 보여준다(데스크탑 네이티브 EyeDropper의 확대 미리보기와
+    // 비슷한 경험) — 가운데 칸이 실제로 추출될 색이다.
+    const LOUPE_SIZE = 108
+    const LOUPE_GRID = 9
+    const LOUPE_STEP = 7 // 격자 한 칸이 대응하는 실제 화면 픽셀 간격(클수록 더 크게 확대됨)
+    const updateLoupe = (cx, cy) => {
+      const loupeCanvas = loupeCanvasRef.current
+      if (!loupeCanvas) return
+      const dpr = window.devicePixelRatio || 1
+      const wantW = Math.round(LOUPE_SIZE * dpr)
+      if (loupeCanvas.width !== wantW) {
+        loupeCanvas.width = wantW
+        loupeCanvas.height = wantW
+      }
+      const lctx = loupeCanvas.getContext('2d')
+      lctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const cellPx = LOUPE_SIZE / LOUPE_GRID
+      const half = Math.floor(LOUPE_GRID / 2)
+      for (let gy = 0; gy < LOUPE_GRID; gy++) {
+        for (let gx = 0; gx < LOUPE_GRID; gx++) {
+          const sx = cx + (gx - half) * LOUPE_STEP
+          const sy = cy + (gy - half) * LOUPE_STEP
+          const sampleCell = hitCell(sx, sy)
+          lctx.fillStyle = sampleCell ? readCanvasColor(sx, sy, sampleCell) : '#ffffff'
+          lctx.fillRect(gx * cellPx, gy * cellPx, cellPx, cellPx)
+        }
+      }
+      lctx.strokeStyle = 'rgba(0,0,0,0.15)'
+      lctx.lineWidth = 1
+      for (let i = 1; i < LOUPE_GRID; i++) {
+        lctx.beginPath(); lctx.moveTo(i * cellPx, 0); lctx.lineTo(i * cellPx, LOUPE_SIZE); lctx.stroke()
+        lctx.beginPath(); lctx.moveTo(0, i * cellPx); lctx.lineTo(LOUPE_SIZE, i * cellPx); lctx.stroke()
+      }
+      // 가운데 칸(=실제로 추출될 색) 강조
+      lctx.strokeStyle = '#000000'
+      lctx.lineWidth = 2
+      lctx.strokeRect(half * cellPx + 1, half * cellPx + 1, cellPx - 2, cellPx - 2)
+    }
+    const showLoupeAt = (cx, cy) => {
+      const wrap = loupeWrapRef.current
+      if (!wrap) return
+      // 손가락/커서가 가리지 않도록 실제 지점 바로 위에 살짝 띄워서 표시
+      wrap.style.left = `${cx}px`
+      wrap.style.top = `${cy - 14}px`
+      wrap.style.display = 'block'
+      updateLoupe(cx, cy)
+    }
+    const hideLoupe = () => {
+      const wrap = loupeWrapRef.current
+      if (wrap) wrap.style.display = 'none'
+    }
+    hideLoupeRef.current = hideLoupe
+
     // ── pointermove ──────────────────────────────────────────────────
     const onMove = (cx, cy) => {
       if (toolRef.current === 'eyedropper') {
         // 데스크탑 네이티브 스포이드의 돋보기 미리보기처럼, 버튼을 누르지 않고 커서만
         // 움직여도 실시간으로 미리보기 색을 갱신한다 (확정은 실제 클릭/탭 때만 onDown에서).
         const cell = hitCell(cx, cy)
-        if (cell) onColorHoverRef.current?.(readCanvasColor(cx, cy, cell))
+        if (cell) {
+          onColorHoverRef.current?.(readCanvasColor(cx, cy, cell))
+          showLoupeAt(cx, cy)
+        } else {
+          hideLoupe()
+        }
         return
       }
       if (!drawing) return
@@ -403,12 +468,15 @@ export default function PixelCanvas({
     const onTouchEnd = () => {
       if (handledByPointerEvent) return
       onUp()
+      hideLoupe() // 손을 떼면 더 이상 가리킬 위치가 없으므로 돋보기도 숨김
     }
+    const onPointerLeave = () => hideLoupe() // 커서가 캔버스 밖으로 나가면 돋보기 숨김
 
     canvas.addEventListener('pointerdown', onPointerDown)
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('pointercancel', onPointerUp)
+    canvas.addEventListener('pointerleave', onPointerLeave)
     canvas.addEventListener('touchstart', onTouchStart, { passive: false })
     canvas.addEventListener('touchmove', onTouchMove, { passive: false })
     canvas.addEventListener('touchend', onTouchEnd)
@@ -419,6 +487,7 @@ export default function PixelCanvas({
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerup', onPointerUp)
       canvas.removeEventListener('pointercancel', onPointerUp)
+      canvas.removeEventListener('pointerleave', onPointerLeave)
       canvas.removeEventListener('touchstart', onTouchStart)
       canvas.removeEventListener('touchmove', onTouchMove)
       canvas.removeEventListener('touchend', onTouchEnd)
@@ -520,6 +589,28 @@ export default function PixelCanvas({
             }}
           />
         )}
+      </div>
+
+      {/* 스포이드 돋보기 — 데스크탑 네이티브 EyeDropper의 확대 미리보기 흉내.
+          position:fixed라 clientX/Y 그대로 좌표로 쓸 수 있고, JS로 직접 display/left/top을
+          바꿔가며 보여주므로 커서 이동마다 React 리렌더가 일어나지 않는다. */}
+      <div
+        ref={loupeWrapRef}
+        style={{
+          display: 'none',
+          position: 'fixed',
+          transform: 'translate(-50%, -100%)',
+          width: 108,
+          height: 108,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: '3px solid rgba(255,255,255,0.9)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          pointerEvents: 'none',
+          zIndex: 9999,
+        }}
+      >
+        <canvas ref={loupeCanvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       </div>
     </div>
   )
