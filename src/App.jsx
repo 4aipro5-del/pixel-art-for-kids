@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import EntryPage from './pages/EntryPage'
 import SetupPage from './pages/SetupPage'
 import EditorPage from './pages/EditorPage'
@@ -10,6 +10,22 @@ export default function App() {
   const [resumeArtwork, setResumeArtwork] = useState(null)
   // 새로 시작하거나 스케치북에서 다른 작품을 불러올 때마다 값을 바꿔 EditorPage를 완전히 새로 마운트시킨다
   const [editorKey, setEditorKey] = useState(0)
+
+  // viewport meta의 maximum-scale=1 / user-scalable=no만으로는 핀치 줌을 못 막는 브라우저가
+  // 있다(특히 iOS Safari는 접근성을 이유로 이 설정을 무시하고 확대를 계속 허용함) — 확대된
+  // 채로 화면이 밀리면 되돌릴 방법이 없어 아이들이 갇히므로, 제스처 자체를 코드로도 막는다.
+  useEffect(() => {
+    const preventGesture = (e) => e.preventDefault() // Safari 전용 pinch 제스처 이벤트
+    const preventPinchTouch = (e) => { if (e.touches.length > 1) e.preventDefault() } // 그 외 브라우저의 2손가락 터치
+    document.addEventListener('gesturestart', preventGesture)
+    document.addEventListener('gesturechange', preventGesture)
+    document.addEventListener('touchmove', preventPinchTouch, { passive: false })
+    return () => {
+      document.removeEventListener('gesturestart', preventGesture)
+      document.removeEventListener('gesturechange', preventGesture)
+      document.removeEventListener('touchmove', preventPinchTouch)
+    }
+  }, [])
 
   const navigate = (newPage) => setPage(newPage)
 

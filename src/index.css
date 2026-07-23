@@ -64,6 +64,10 @@ body {
   padding: 0;
   height: 100%;
   overflow: hidden;
+  /* 핀치 줌·더블탭 확대를 CSS 차원에서도 막는다(App.jsx의 JS 기반 제스처 차단과 이중 방어).
+     캔버스처럼 직접 그리기가 필요한 엘리먼트는 자체적으로 더 구체적인 touch-action을
+     지정해두어 이 기본값을 덮어쓴다. */
+  touch-action: manipulation;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
 }
 
