@@ -5,6 +5,7 @@ import HelpModal from '../components/HelpModal'
 import DoanView from '../components/DoanView'
 import SketchbookModal from '../components/SketchbookModal'
 import copyIcon from '../assets/copy-icon.png'
+import { decodeTracingBitmap, sampleContainColor } from '../utils/tracingBitmap'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixel_art_sketchbook'
@@ -137,6 +138,37 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const sidebarTracingInputRef = useRef(null)
   const saveFileInputRef = useRef(null)
   const [isDraggingTracing, setIsDraggingTracing] = useState(false) // 밑그림 박스 위로 파일을 드래그 중인지
+  // 사이드바의 밑그림 원본 미리보기 썸네일에서도 스포이드로 색을 뽑을 수 있도록, 캔버스와는
+  // 별도로 이 썸네일 전용 오프스크린 비트맵을 디코딩해둔다 (PixelCanvas 내부 상태와 무관).
+  const tracingThumbBitmapRef = useRef(null)
+
+  useEffect(() => {
+    if (!tracingImage) { tracingThumbBitmapRef.current = null; return }
+    tracingThumbBitmapRef.current = null
+    return decodeTracingBitmap(tracingImage, bmp => { tracingThumbBitmapRef.current = bmp })
+  }, [tracingImage])
+
+  // 썸네일은 transform(이동/확대) 없이 object-fit:contain으로만 배치되므로, 클릭 지점의
+  // box 기준 로컬 좌표를 그대로 sampleContainColor에 넘기면 된다.
+  const pickThumbnailColorAt = (e) => {
+    const bmp = tracingThumbBitmapRef.current
+    if (!bmp) return null
+    const rect = e.currentTarget.getBoundingClientRect()
+    return sampleContainColor(bmp, e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height)
+  }
+
+  const handleThumbnailEyedropMove = (e) => {
+    if (tool !== 'eyedropper') return
+    const color = pickThumbnailColorAt(e)
+    if (color) handleColorHover(color)
+  }
+
+  const handleThumbnailEyedropClick = (e) => {
+    if (tool !== 'eyedropper') return
+    e.stopPropagation()
+    const color = pickThumbnailColorAt(e)
+    handleColorPick(color || '#ffffff')
+  }
 
   // 자동 저장이 덮어쓸 스케치북 항목의 고유 ID. 불러온 작품이면 그 ID를 그대로 이어받고,
   // 새로 시작한 캔버스면 이 세션 동안 고정되는 새 ID를 발급해 매번 새 항목이 쌓이지 않게 한다.
@@ -804,10 +836,16 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
               >
                 {tracingImage ? (
                   <>
+                    {/* 스포이드 도구가 선택돼 있으면 이 원본 미리보기에서도 직접 색을 뽑을 수
+                        있다 — 캔버스 위 밑그림은 25% 투명도라 진짜 색을 가늠하기 어려우니,
+                        원본 그대로 보이는 이 썸네일이 오히려 색 참고에 더 정확하다. */}
                     <img
                       src={tracingImage}
                       alt="원본 그림"
                       className="w-full h-full object-contain"
+                      style={{ cursor: tool === 'eyedropper' ? 'copy' : 'default' }}
+                      onPointerMove={handleThumbnailEyedropMove}
+                      onClick={handleThumbnailEyedropClick}
                     />
                     {/* 켜져 있으면 캔버스 위 드래그가 펜/지우개 대신 밑그림 위치 이동으로 처리된다
                         (PixelCanvas의 투명 오버레이가 이 모드일 때만 포인터 이벤트를 가로챈다). */}

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import { decodeTracingBitmap, sampleContainColor } from '../utils/tracingBitmap'
 
 export default function PixelCanvas({
   pixels, gridCols, gridRows,
@@ -53,18 +54,8 @@ export default function PixelCanvas({
   // getImageData로 읽는다 — data: URL이라 caching taint 걱정 없이 항상 읽을 수 있다.
   useEffect(() => {
     if (!tracingImage) { tracingBitmapRef.current = null; return }
-    let cancelled = false
-    const img = new Image()
-    img.onload = () => {
-      if (cancelled) return
-      const off = document.createElement('canvas')
-      off.width = img.naturalWidth
-      off.height = img.naturalHeight
-      off.getContext('2d').drawImage(img, 0, 0)
-      tracingBitmapRef.current = { canvas: off, width: img.naturalWidth, height: img.naturalHeight }
-    }
-    img.src = tracingImage
-    return () => { cancelled = true }
+    tracingBitmapRef.current = null
+    return decodeTracingBitmap(tracingImage, bmp => { tracingBitmapRef.current = bmp })
   }, [tracingImage])
 
   // 캔버스 실제 렌더 크기(cellSize)가 바뀌면(전체화면 진입/해제, 창 크기 변경, 확대 슬라이더 등)
@@ -236,18 +227,7 @@ export default function PixelCanvas({
       const scale = tracingScaleRef.current || 1
       const boxX = cx0 + (localX - offset.x - cx0) / scale
       const boxY = cy0 + (localY - offset.y - cy0) / scale
-      const fitScale = Math.min(wrapperW / bmp.width, wrapperH / bmp.height)
-      const padX = (wrapperW - bmp.width * fitScale) / 2
-      const padY = (wrapperH - bmp.height * fitScale) / 2
-      const imgX = Math.floor((boxX - padX) / fitScale)
-      const imgY = Math.floor((boxY - padY) / fitScale)
-      if (imgX < 0 || imgY < 0 || imgX >= bmp.width || imgY >= bmp.height) return null
-      try {
-        const [r, g, b] = bmp.canvas.getContext('2d').getImageData(imgX, imgY, 1, 1).data
-        return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
-      } catch {
-        return null
-      }
+      return sampleContainColor(bmp, boxX, boxY, wrapperW, wrapperH)
     }
 
     // 스포이드: 이미 그려진(칠해진) 칸이면 인메모리 그리드 상태(pixelsRef)에서 그대로 읽고,
