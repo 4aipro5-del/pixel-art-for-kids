@@ -229,6 +229,13 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     toastTimer.current = setTimeout(() => setToast(null), 2500)
   }, []) // state setters are stable — no deps needed
 
+  // 스포이드 사용 중 커서만 움직여도(클릭 전) 실시간으로 색상 미리보기만 갱신 — 데스크탑
+  // 네이티브 스포이드의 돋보기 미리보기와 비슷한 경험. 최근 색상/토스트/도구 전환 같은
+  // "확정" 동작은 하지 않는다(그건 실제 클릭 때 handleColorPick이 담당).
+  const handleColorHover = useCallback((color) => {
+    if (color) setSelectedColor(color)
+  }, [])
+
   // 도구를 바꿀 때는 항상 "밑그림 이동" 모드를 함께 꺼서, 이동 모드가 캔버스 위 오버레이로
   // 남아 포인터 이벤트를 가로채고(그리기/스포이드가 먹통이 되고 커서도 grab으로 고정되는 원인) 있지 않게 한다.
   const selectTool = (id) => {
@@ -895,6 +902,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             zoom={zoom}
             onCommit={handleCommit}
             onColorPick={handleColorPick}
+            onColorHover={handleColorHover}
             onPaintComplete={addRecentColor}
             tracingImage={tracingImage}
             tracingOpacity={tracingVisible ? tracingOpacity : 0}

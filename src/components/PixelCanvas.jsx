@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react'
 export default function PixelCanvas({
   pixels, gridCols, gridRows,
   selectedColor, tool, brushSize, zoom,
-  onCommit, onColorPick, onPaintComplete,
+  onCommit, onColorPick, onColorHover, onPaintComplete,
   tracingImage, tracingOpacity, tracingScale = 1,
   tracingOffset = { x: 0, y: 0 }, tracingMoveMode = false, onTracingOffsetChange,
 }) {
@@ -27,6 +27,12 @@ export default function PixelCanvas({
   const gridRowsRef = useRef(gridRows)
   const tracingOffsetRef = useRef(tracingOffset)
   const onTracingOffsetChangeRef = useRef(onTracingOffsetChange)
+  const tracingImageRef = useRef(tracingImage)
+  const tracingScaleRef = useRef(tracingScale)
+  const onColorHoverRef = useRef(onColorHover)
+  // 밑그림 원본 픽셀을 실제로 읽기 위한 오프스크린 비트맵 — <img>는 DOM에 CSS로만 배치되고
+  // 캔버스에는 그려지지 않으므로, 스포이드가 밑그림 색을 추출하려면 별도로 디코딩해둬야 한다.
+  const tracingBitmapRef = useRef(null) // { canvas, width, height } | null
 
   selectedColorRef.current = selectedColor
   toolRef.current = tool
@@ -39,6 +45,27 @@ export default function PixelCanvas({
   gridRowsRef.current = gridRows
   tracingOffsetRef.current = tracingOffset
   onTracingOffsetChangeRef.current = onTracingOffsetChange
+  tracingImageRef.current = tracingImage
+  tracingScaleRef.current = tracingScale
+  onColorHoverRef.current = onColorHover
+
+  // 밑그림이 바뀔 때마다 오프스크린 캔버스에 한 번만 그려두고, 스포이드는 이 비트맵에서
+  // getImageData로 읽는다 — data: URL이라 caching taint 걱정 없이 항상 읽을 수 있다.
+  useEffect(() => {
+    if (!tracingImage) { tracingBitmapRef.current = null; return }
+    let cancelled = false
+    const img = new Image()
+    img.onload = () => {
+      if (cancelled) return
+      const off = document.createElement('canvas')
+      off.width = img.naturalWidth
+      off.height = img.naturalHeight
+      off.getContext('2d').drawImage(img, 0, 0)
+      tracingBitmapRef.current = { canvas: off, width: img.naturalWidth, height: img.naturalHeight }
+    }
+    img.src = tracingImage
+    return () => { cancelled = true }
+  }, [tracingImage])
 
   // 캔버스 실제 렌더 크기(cellSize)가 바뀌면(전체화면 진입/해제, 창 크기 변경, 확대 슬라이더 등)
   // 밑그림 드래그 오프셋도 같은 비율로 리스케일해야, 두 레이어가 같이 확대·이동한 것처럼 보인다.
@@ -197,13 +224,45 @@ export default function PixelCanvas({
       return points
     }
 
-    // 스포이드: 실제 렌더링과 동일한 소스(pixelsRef, 인메모리 그리드 상태)에서 직접 색을 읽는다.
-    // getImageData로 캔버스 백킹스토어를 되읽는 방식은 일부 기기(GPU 가속 경로 차이가 있는
-    // ChromeOS 기기 등)에서 조용히 실패하는 경우가 있어, 그리기에도 쓰이는 동일한 데이터를
-    // 그대로 재사용해 기기 의존성을 없앤다.
-    const readCanvasColor = (cell) => {
+    // 밑그림 원본 좌표계로 역변환해 실제 이미지 픽셀 색을 읽는다. wrapper(=캔버스) 기준
+    // 로컬 좌표 → transform(translate 후 scale, transform-origin:center) 역변환 → object-fit:contain
+    // 매핑 순서로 계산한다. 레터박스(여백) 영역이면 null.
+    const tracingImageColorAt = (localX, localY, wrapperW, wrapperH) => {
+      const bmp = tracingBitmapRef.current
+      if (!bmp || wrapperW <= 0 || wrapperH <= 0) return null
+      const cx0 = wrapperW / 2
+      const cy0 = wrapperH / 2
+      const offset = tracingOffsetRef.current || { x: 0, y: 0 }
+      const scale = tracingScaleRef.current || 1
+      const boxX = cx0 + (localX - offset.x - cx0) / scale
+      const boxY = cy0 + (localY - offset.y - cy0) / scale
+      const fitScale = Math.min(wrapperW / bmp.width, wrapperH / bmp.height)
+      const padX = (wrapperW - bmp.width * fitScale) / 2
+      const padY = (wrapperH - bmp.height * fitScale) / 2
+      const imgX = Math.floor((boxX - padX) / fitScale)
+      const imgY = Math.floor((boxY - padY) / fitScale)
+      if (imgX < 0 || imgY < 0 || imgX >= bmp.width || imgY >= bmp.height) return null
       try {
-        return (pixelsRef.current[cell.r]?.[cell.c] || '#ffffff').toLowerCase()
+        const [r, g, b] = bmp.canvas.getContext('2d').getImageData(imgX, imgY, 1, 1).data
+        return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
+      } catch {
+        return null
+      }
+    }
+
+    // 스포이드: 이미 그려진(칠해진) 칸이면 인메모리 그리드 상태(pixelsRef)에서 그대로 읽고,
+    // 칠한 적 없는 칸(흰색)이면 그 아래 비치는 밑그림(tracingImage)의 실제 픽셀 색을 대신
+    // 읽는다 — 그래야 참고 사진/스케치의 색을 그대로 따올 수 있다.
+    const readCanvasColor = (cx, cy, cell) => {
+      try {
+        const painted = pixelsRef.current[cell.r]?.[cell.c]
+        if (painted) return painted.toLowerCase()
+        if (tracingImageRef.current) {
+          const rect = canvas.getBoundingClientRect()
+          const fromImage = tracingImageColorAt(cx - rect.left, cy - rect.top, rect.width, rect.height)
+          if (fromImage) return fromImage
+        }
+        return '#ffffff'
       } catch {
         return '#ffffff'
       }
@@ -267,7 +326,7 @@ export default function PixelCanvas({
 
       if (currentTool === 'eyedropper') {
         // ── EYEDROPPER (canvas fallback): read color → callback → never draw ──
-        onColorPickRef.current(readCanvasColor(cell))
+        onColorPickRef.current(readCanvasColor(cx, cy, cell))
         return                           // 어떤 경우에도 그리기는 실행 안 함
       }
 
@@ -291,6 +350,13 @@ export default function PixelCanvas({
 
     // ── pointermove ──────────────────────────────────────────────────
     const onMove = (cx, cy) => {
+      if (toolRef.current === 'eyedropper') {
+        // 데스크탑 네이티브 스포이드의 돋보기 미리보기처럼, 버튼을 누르지 않고 커서만
+        // 움직여도 실시간으로 미리보기 색을 갱신한다 (확정은 실제 클릭/탭 때만 onDown에서).
+        const cell = hitCell(cx, cy)
+        if (cell) onColorHoverRef.current?.(readCanvasColor(cx, cy, cell))
+        return
+      }
       if (!drawing) return
       // 드래그 중에는 클램프된 좌표를 사용 — 커서가 캔버스 밖으로 나가도
       // 가장 가까운 가장자리 칸까지 선이 계속 이어진다.
