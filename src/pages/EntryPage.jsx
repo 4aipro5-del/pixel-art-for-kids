@@ -79,7 +79,7 @@ export default function EntryPage({ onNext }) {
   }
 
   return (
-    <div className="relative h-screen w-screen overflow-y-auto" style={{ background: PAGE_BG }}>
+    <div className="relative h-svh w-screen overflow-y-auto" style={{ background: PAGE_BG }}>
 
       {/* 은은한 노란 전구빛 글로우 — 화면 중앙에서 부드럽게 퍼짐 */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -93,7 +93,7 @@ export default function EntryPage({ onNext }) {
         />
       </div>
 
-      <main className="relative flex min-h-screen w-full items-center justify-center px-4 py-6 sm:px-8">
+      <main className="relative flex min-h-svh w-full items-center justify-center px-4 py-6 sm:px-8">
         <div className="flex w-full max-w-3xl flex-col items-center gap-4 text-center sm:gap-5">
 
           <img

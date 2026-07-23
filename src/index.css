@@ -51,9 +51,18 @@
 
 * { box-sizing: border-box; }
 
+/* html에도 고정 높이/overflow를 명시해야, iOS Safari에서 주소창 상태 변화나 Split View 등으로
+   실제 보이는 영역이 100vh와 어긋나는 순간에도 문서 자체가 스크롤되어 상단 헤더가
+   화면 밖으로 밀려나지 않는다 (body의 overflow:hidden만으로는 보장되지 않음). */
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   padding: 0;
+  height: 100%;
   overflow: hidden;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
 }

@@ -82,7 +82,7 @@ export default function SetupPage({ onNext, onGoHome }) {
   }, [ratio]) // eslint-disable-line
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden" style={{ background: PAGE_BG }}>
+    <div className="relative h-svh w-screen overflow-hidden" style={{ background: PAGE_BG }}>
 
       {/* Scrollable main area */}
       <div className="relative z-10 h-full overflow-y-auto">

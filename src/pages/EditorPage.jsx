@@ -586,7 +586,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   const canRedo = future.length > 0
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden" style={{ background: PAGE_BG }}>
+    <div className="flex flex-col h-svh w-screen overflow-hidden" style={{ background: PAGE_BG }}>
 
       {/* ── Header ─────────────────────────────────── */}
       <header
