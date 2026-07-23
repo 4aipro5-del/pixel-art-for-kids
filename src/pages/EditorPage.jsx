@@ -237,9 +237,13 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     // 마우스 이벤트 기준으로 동작해 터치 입력을 인식하지 못하는 경우가 있다 —
     // 터치가 가능한 기기에서는 항상 캔버스 폴백 스포이드(PixelCanvas의 Pointer Events 기반
     // 좌표 계산)로 처리한다.
+    // ChromeOS는 트랙패드만 있는 기종이라도(터치 미감지) 기기 관리 정책(화면 캡처 제한 등)
+    // 때문에 네이티브 EyeDropper가 조용히 실패하는 경우가 있어, 터치 여부와 무관하게 항상
+    // 캔버스 폴백을 사용한다.
     const isTouchCapable = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-    if (!('EyeDropper' in window) || isTouchCapable) {
-      // Safari 등 미지원 브라우저 또는 터치 기기 → 캔버스 스포이드 모드로 전환
+    const isChromeOS = navigator.userAgent.includes('CrOS')
+    if (!('EyeDropper' in window) || isTouchCapable || isChromeOS) {
+      // Safari 등 미지원 브라우저, 터치 기기, 또는 ChromeOS → 캔버스 스포이드 모드로 전환
       setTool('eyedropper')
       showToast('캔버스를 눌러 색상을 추출하세요')
       return
@@ -250,12 +254,16 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
       const result = await new window.EyeDropper().open()
       handleColorPick(result.sRGBHex)  // 색상 등록 + 최근 색상 추가 + 펜 모드 복귀
     } catch (e) {
-      // AbortError: ESC 취소 — 조용히 이전 도구로 복원
-      // 그 외 예기치 못한 에러: 토스트 없이 복원
-      if (e.name !== 'AbortError') {
-        console.warn('EyeDropper error:', e)
+      if (e.name === 'AbortError') {
+        // ESC 취소 — 조용히 이전 도구로 복원
+        setTool(prevToolRef.current)
+        return
       }
-      setTool(prevToolRef.current)
+      // 그 외 예기치 못한 에러(기기 정책 등으로 인한 실패) — 조용히 되돌리지 않고
+      // 캔버스 폴백으로 전환해 사용자가 계속 색상을 추출할 수 있게 한다.
+      console.warn('EyeDropper error:', e)
+      setTool('eyedropper')
+      showToast('캔버스를 눌러 색상을 추출하세요')
     }
   }
 
