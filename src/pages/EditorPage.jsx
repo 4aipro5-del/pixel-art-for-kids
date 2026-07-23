@@ -6,6 +6,7 @@ import DoanView from '../components/DoanView'
 import SketchbookModal from '../components/SketchbookModal'
 import copyIcon from '../assets/copy-icon.png'
 import { decodeTracingBitmap, sampleContainColor } from '../utils/tracingBitmap'
+import { drawLoupe } from '../utils/loupe'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixel_art_sketchbook'
@@ -141,12 +142,24 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   // 사이드바의 밑그림 원본 미리보기 썸네일에서도 스포이드로 색을 뽑을 수 있도록, 캔버스와는
   // 별도로 이 썸네일 전용 오프스크린 비트맵을 디코딩해둔다 (PixelCanvas 내부 상태와 무관).
   const tracingThumbBitmapRef = useRef(null)
+  // 캔버스와 같은 스타일의 확대 돋보기를 썸네일에서도 보여주기 위한 ref (썸네일이 작아서
+  // 격자 한 칸의 실제 픽셀 간격만 더 좁게 잡는다).
+  const thumbLoupeWrapRef = useRef(null)
+  const thumbLoupeCanvasRef = useRef(null)
+  const THUMB_LOUPE_STEP = 5
 
   useEffect(() => {
     if (!tracingImage) { tracingThumbBitmapRef.current = null; return }
     tracingThumbBitmapRef.current = null
     return decodeTracingBitmap(tracingImage, bmp => { tracingThumbBitmapRef.current = bmp })
   }, [tracingImage])
+
+  // 스포이드가 아닌 도구로 바뀌면(또는 밑그림이 사라지면) 썸네일 돋보기도 확실히 숨긴다.
+  useEffect(() => {
+    if (tool !== 'eyedropper' && thumbLoupeWrapRef.current) {
+      thumbLoupeWrapRef.current.style.display = 'none'
+    }
+  }, [tool])
 
   // 썸네일은 transform(이동/확대) 없이 object-fit:contain으로만 배치되므로, 클릭 지점의
   // box 기준 로컬 좌표를 그대로 sampleContainColor에 넘기면 된다.
@@ -159,8 +172,24 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
 
   const handleThumbnailEyedropMove = (e) => {
     if (tool !== 'eyedropper') return
-    const color = pickThumbnailColorAt(e)
+    const bmp = tracingThumbBitmapRef.current
+    const wrap = thumbLoupeWrapRef.current
+    const loupeCanvas = thumbLoupeCanvasRef.current
+    if (!bmp || !wrap || !loupeCanvas) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const localX = e.clientX - rect.left
+    const localY = e.clientY - rect.top
+    const color = sampleContainColor(bmp, localX, localY, rect.width, rect.height)
     if (color) handleColorHover(color)
+    drawLoupe(loupeCanvas, (dx, dy) =>
+      sampleContainColor(bmp, localX + dx * THUMB_LOUPE_STEP, localY + dy * THUMB_LOUPE_STEP, rect.width, rect.height))
+    wrap.style.left = `${e.clientX}px`
+    wrap.style.top = `${e.clientY - 14}px`
+    wrap.style.display = 'block'
+  }
+
+  const handleThumbnailEyedropLeave = () => {
+    if (thumbLoupeWrapRef.current) thumbLoupeWrapRef.current.style.display = 'none'
   }
 
   const handleThumbnailEyedropClick = (e) => {
@@ -843,8 +872,9 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                       src={tracingImage}
                       alt="원본 그림"
                       className="w-full h-full object-contain"
-                      style={{ cursor: tool === 'eyedropper' ? "url('/images/eyedropper-cursor.png') 2 30, copy" : 'default' }}
+                      style={{ cursor: tool === 'eyedropper' ? 'none' : 'default' }}
                       onPointerMove={handleThumbnailEyedropMove}
+                      onPointerLeave={handleThumbnailEyedropLeave}
                       onClick={handleThumbnailEyedropClick}
                     />
                     {/* 켜져 있으면 캔버스 위 드래그가 펜/지우개 대신 밑그림 위치 이동으로 처리된다
@@ -969,6 +999,27 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
           </button>
         </div>
         </>)}
+      </div>
+
+      {/* 밑그림 원본 미리보기 썸네일용 스포이드 돋보기 — PixelCanvas의 돋보기와 동일한 디자인.
+          position:fixed + JS로 직접 표시 위치를 옮기므로 커서 이동마다 리렌더되지 않는다. */}
+      <div
+        ref={thumbLoupeWrapRef}
+        style={{
+          display: 'none',
+          position: 'fixed',
+          transform: 'translate(-50%, -100%)',
+          width: 108,
+          height: 108,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          border: '3px solid rgba(255,255,255,0.9)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          pointerEvents: 'none',
+          zIndex: 9999,
+        }}
+      >
+        <canvas ref={thumbLoupeCanvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       </div>
 
       {/* Toast */}

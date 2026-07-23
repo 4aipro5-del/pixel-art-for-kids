@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { decodeTracingBitmap, sampleContainColor } from '../utils/tracingBitmap'
+import { drawLoupe } from '../utils/loupe'
 
 export default function PixelCanvas({
   pixels, gridCols, gridRows,
@@ -134,10 +135,10 @@ export default function PixelCanvas({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    // 브라우저 기본 cursor:'copy' 아이콘은 기기별로 주먹 쥔 손 모양처럼 보여 스포이드 중인지
-    // 헷갈릴 수 있어, 실제 스포이드 아이콘 이미지를 커스텀 커서로 사용한다.
+    // 스포이드 중엔 돋보기(확대 미리보기)가 가리키는 위치를 직접 보여주므로 — 데스크탑 네이티브
+    // EyeDropper도 돋보기가 떠 있는 동안은 커서 자체를 숨긴다 — 커서를 아예 감춘다.
     canvas.style.cursor =
-      tool === 'eyedropper' ? "url('/images/eyedropper-cursor.png') 2 30, copy" :
+      tool === 'eyedropper' ? 'none' :
       tool === 'eraser' ? 'cell' : 'crosshair'
     if (tool !== 'eyedropper') hideLoupeRef.current()
   }, [tool])
@@ -339,41 +340,16 @@ export default function PixelCanvas({
     // ── 스포이드 돋보기(loupe) ───────────────────────────────────────────
     // 커서 주변을 격자 형태로 확대해 보여준다(데스크탑 네이티브 EyeDropper의 확대 미리보기와
     // 비슷한 경험) — 가운데 칸이 실제로 추출될 색이다.
-    const LOUPE_SIZE = 108
-    const LOUPE_GRID = 9
     const LOUPE_STEP = 7 // 격자 한 칸이 대응하는 실제 화면 픽셀 간격(클수록 더 크게 확대됨)
     const updateLoupe = (cx, cy) => {
       const loupeCanvas = loupeCanvasRef.current
       if (!loupeCanvas) return
-      const dpr = window.devicePixelRatio || 1
-      const wantW = Math.round(LOUPE_SIZE * dpr)
-      if (loupeCanvas.width !== wantW) {
-        loupeCanvas.width = wantW
-        loupeCanvas.height = wantW
-      }
-      const lctx = loupeCanvas.getContext('2d')
-      lctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      const cellPx = LOUPE_SIZE / LOUPE_GRID
-      const half = Math.floor(LOUPE_GRID / 2)
-      for (let gy = 0; gy < LOUPE_GRID; gy++) {
-        for (let gx = 0; gx < LOUPE_GRID; gx++) {
-          const sx = cx + (gx - half) * LOUPE_STEP
-          const sy = cy + (gy - half) * LOUPE_STEP
-          const sampleCell = hitCell(sx, sy)
-          lctx.fillStyle = sampleCell ? readCanvasColor(sx, sy, sampleCell) : '#ffffff'
-          lctx.fillRect(gx * cellPx, gy * cellPx, cellPx, cellPx)
-        }
-      }
-      lctx.strokeStyle = 'rgba(0,0,0,0.15)'
-      lctx.lineWidth = 1
-      for (let i = 1; i < LOUPE_GRID; i++) {
-        lctx.beginPath(); lctx.moveTo(i * cellPx, 0); lctx.lineTo(i * cellPx, LOUPE_SIZE); lctx.stroke()
-        lctx.beginPath(); lctx.moveTo(0, i * cellPx); lctx.lineTo(LOUPE_SIZE, i * cellPx); lctx.stroke()
-      }
-      // 가운데 칸(=실제로 추출될 색) 강조
-      lctx.strokeStyle = '#000000'
-      lctx.lineWidth = 2
-      lctx.strokeRect(half * cellPx + 1, half * cellPx + 1, cellPx - 2, cellPx - 2)
+      drawLoupe(loupeCanvas, (dx, dy) => {
+        const sx = cx + dx * LOUPE_STEP
+        const sy = cy + dy * LOUPE_STEP
+        const sampleCell = hitCell(sx, sy)
+        return sampleCell ? readCanvasColor(sx, sy, sampleCell) : '#ffffff'
+      })
     }
     const showLoupeAt = (cx, cy) => {
       const wrap = loupeWrapRef.current
