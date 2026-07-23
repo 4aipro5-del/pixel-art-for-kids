@@ -843,7 +843,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
                       src={tracingImage}
                       alt="원본 그림"
                       className="w-full h-full object-contain"
-                      style={{ cursor: tool === 'eyedropper' ? 'copy' : 'default' }}
+                      style={{ cursor: tool === 'eyedropper' ? "url('/images/eyedropper-cursor.png') 2 30, copy" : 'default' }}
                       onPointerMove={handleThumbnailEyedropMove}
                       onClick={handleThumbnailEyedropClick}
                     />

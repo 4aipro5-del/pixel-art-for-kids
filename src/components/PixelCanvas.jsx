@@ -129,8 +129,10 @@ export default function PixelCanvas({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    // 브라우저 기본 cursor:'copy' 아이콘은 기기별로 주먹 쥔 손 모양처럼 보여 스포이드 중인지
+    // 헷갈릴 수 있어, 실제 스포이드 아이콘 이미지를 커스텀 커서로 사용한다.
     canvas.style.cursor =
-      tool === 'eyedropper' ? 'copy' :
+      tool === 'eyedropper' ? "url('/images/eyedropper-cursor.png') 2 30, copy" :
       tool === 'eraser' ? 'cell' : 'crosshair'
   }, [tool])
 
