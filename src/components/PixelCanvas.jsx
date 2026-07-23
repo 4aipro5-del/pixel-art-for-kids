@@ -161,8 +161,13 @@ export default function PixelCanvas({
       const cs = cellSizeRef.current
       const cols = gridColsRef.current
       const rows = gridRowsRef.current
-      let c = Math.floor((cx - rect.left) / cs)
-      let r = Math.floor((cy - rect.top) / cs)
+      // rect.width/height(실제 화면 표시 크기)는 이론상 canvas.style.width(gridCols*cs)와
+      // 같아야 하지만, 혹시 모를 CSS 왜곡(브라우저 확대, 레이아웃 반올림 오차 등)에도
+      // 좌표가 어긋나지 않도록 실측 비율로 항상 보정한다.
+      const scaleX = rect.width / (cols * cs) || 1
+      const scaleY = rect.height / (rows * cs) || 1
+      let c = Math.floor((cx - rect.left) / (cs * scaleX))
+      let r = Math.floor((cy - rect.top) / (cs * scaleY))
       if (clamp) {
         c = Math.min(Math.max(c, 0), cols - 1)
         r = Math.min(Math.max(r, 0), rows - 1)
@@ -196,7 +201,13 @@ export default function PixelCanvas({
     // getImageData로 캔버스 백킹스토어를 되읽는 방식은 일부 기기(GPU 가속 경로 차이가 있는
     // ChromeOS 기기 등)에서 조용히 실패하는 경우가 있어, 그리기에도 쓰이는 동일한 데이터를
     // 그대로 재사용해 기기 의존성을 없앤다.
-    const readCanvasColor = (cell) => (pixelsRef.current[cell.r]?.[cell.c] || '#ffffff').toLowerCase()
+    const readCanvasColor = (cell) => {
+      try {
+        return (pixelsRef.current[cell.r]?.[cell.c] || '#ffffff').toLowerCase()
+      } catch {
+        return '#ffffff'
+      }
+    }
 
     // Paint one or four cells depending on brush size
     const paint = (cell) => {
@@ -311,27 +322,59 @@ export default function PixelCanvas({
     // Pointer Events + setPointerCapture: 마우스/터치/펜을 하나의 경로로 통합하고,
     // 캔버스 바깥으로 드래그가 나가거나 브라우저 밖에서 버튼을 놓아도 이 엘리먼트가
     // 계속 이벤트를 받도록 강제해 드래그 상태가 꼬이지 않게 한다.
+    let handledByPointerEvent = false // 이번 제스처가 pointerdown으로 처리됐으면 대응하는 touch 이벤트는 무시(중복 실행 방지)
     const onPointerDown = e => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
+      handledByPointerEvent = true
       canvas.setPointerCapture(e.pointerId)
       onDown(e.clientX, e.clientY)
     }
     const onPointerMove = e => onMove(e.clientX, e.clientY)
     const onPointerUp = e => {
       onUp()
+      handledByPointerEvent = false
       if (canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId)
+    }
+
+    // 일부 기기(터치패드/터치스크린 드라이버 조합 등)에서 Pointer Events가 씹히는 경우를
+    // 대비한 안전망 — 같은 제스처가 이미 pointerdown으로 처리됐으면 중복 실행하지 않는다.
+    const onTouchStart = e => {
+      if (handledByPointerEvent) return
+      const t = e.touches[0]
+      if (!t) return
+      e.preventDefault()
+      onDown(t.clientX, t.clientY)
+    }
+    const onTouchMove = e => {
+      if (handledByPointerEvent) return
+      const t = e.touches[0]
+      if (!t) return
+      e.preventDefault()
+      onMove(t.clientX, t.clientY)
+    }
+    const onTouchEnd = () => {
+      if (handledByPointerEvent) return
+      onUp()
     }
 
     canvas.addEventListener('pointerdown', onPointerDown)
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('pointercancel', onPointerUp)
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false })
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+    canvas.addEventListener('touchend', onTouchEnd)
+    canvas.addEventListener('touchcancel', onTouchEnd)
 
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerup', onPointerUp)
       canvas.removeEventListener('pointercancel', onPointerUp)
+      canvas.removeEventListener('touchstart', onTouchStart)
+      canvas.removeEventListener('touchmove', onTouchMove)
+      canvas.removeEventListener('touchend', onTouchEnd)
+      canvas.removeEventListener('touchcancel', onTouchEnd)
     }
   }, []) // ← 의도적 빈 deps: 모든 값을 ref로 읽으므로 재등록 불필요
 
