@@ -192,23 +192,11 @@ export default function PixelCanvas({
       return points
     }
 
-    // Read actual rendered HEX from canvas pixel data (cell center)
-    // Returns null on failure (tainted canvas, lost context, etc.)
-    const readCanvasColor = (cell) => {
-      try {
-        const cs = cellSizeRef.current
-        const dpr = window.devicePixelRatio || 1
-        // getImageData는 ctx의 transform을 무시하고 backing store의 실제 픽셀을 읽으므로 dpr을 곱해준다
-        const px = Math.floor((cell.c * cs + cs * 0.5) * dpr)
-        const py = Math.floor((cell.r * cs + cs * 0.5) * dpr)
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return null
-        const [r, g, b] = ctx.getImageData(px, py, 1, 1).data
-        return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
-      } catch {
-        return null
-      }
-    }
+    // 스포이드: 실제 렌더링과 동일한 소스(pixelsRef, 인메모리 그리드 상태)에서 직접 색을 읽는다.
+    // getImageData로 캔버스 백킹스토어를 되읽는 방식은 일부 기기(GPU 가속 경로 차이가 있는
+    // ChromeOS 기기 등)에서 조용히 실패하는 경우가 있어, 그리기에도 쓰이는 동일한 데이터를
+    // 그대로 재사용해 기기 의존성을 없앤다.
+    const readCanvasColor = (cell) => (pixelsRef.current[cell.r]?.[cell.c] || '#ffffff').toLowerCase()
 
     // Paint one or four cells depending on brush size
     const paint = (cell) => {
@@ -268,11 +256,7 @@ export default function PixelCanvas({
 
       if (currentTool === 'eyedropper') {
         // ── EYEDROPPER (canvas fallback): read color → callback → never draw ──
-        const picked = readCanvasColor(cell)
-        if (picked !== null) {
-          onColorPickRef.current(picked) // 색상 추출 성공 → EditorPage에 전달
-        }
-        // null이면 아무 동작 없이 eyedropper 모드 유지 (사용자가 다시 클릭 가능)
+        onColorPickRef.current(readCanvasColor(cell))
         return                           // 어떤 경우에도 그리기는 실행 안 함
       }
 
