@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { BASE_GRIDS } from '../utils/gridPresets'
+import { loadImageFile, detectArtwork } from '../utils/importArtwork'
 
 const ACCENT_YELLOW = '#f7d070'
+const DANGER = '#f87171'
 const PAGE_BG = '#1a1c1e'
 const PANEL_BG = '#111214'
 
@@ -9,14 +12,6 @@ const RATIOS = [
   { id: 'tablet', label: '태블릿',   sublabel: '화면 비율 4:3',          hasOrientation: true, defaultOrientation: 'landscape' },
   { id: 'a4',     label: 'A4 출력',  sublabel: '종이처럼 긴 비율이에요', hasOrientation: true, defaultOrientation: 'portrait' },
 ]
-
-// 각 비율의 "기준 방향" 해상도 [쉬움, 보통, 어려움]. 반대 방향은 cols/rows를 서로 바꿔 계산한다.
-// 정사각형: 방향 없음(고정) · 태블릿: 기준 = 가로 · A4: 기준 = 세로
-const BASE_GRIDS = {
-  square: [{ cols: 24, rows: 24 }, { cols: 32, rows: 32 }, { cols: 64, rows: 64 }],
-  tablet: [{ cols: 28, rows: 21 }, { cols: 36, rows: 27 }, { cols: 48, rows: 36 }],
-  a4:     [{ cols: 20, rows: 28 }, { cols: 30, rows: 42 }, { cols: 45, rows: 63 }],
-}
 
 const LEVELS = [
   { badge: '쉬움',   desc: '큼직한 픽셀로 편하게',   dotCount: 3, dotSize: 14 },
@@ -67,10 +62,40 @@ function MiniGrid({ count, size, active }) {
   )
 }
 
-export default function SetupPage({ onNext, onGoHome }) {
+// 불러온 그림 후보를 작게 그려 보여주는 미리보기 — 학생이 숫자 대신 그림을 보고 고르도록
+function ArtworkPreview({ artwork, size = 140 }) {
+  const canvasRef = useRef(null)
+  // 칸 하나를 1px로 그리고 CSS로 키운다 — 칸 수가 달라도 후보들이 같은 크기로 보이게
+  useEffect(() => {
+    const ctx = canvasRef.current.getContext('2d')
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, artwork.cols, artwork.rows)
+    artwork.pixels.forEach((row, r) => row.forEach((color, c) => {
+      if (!color) return
+      ctx.fillStyle = color
+      ctx.fillRect(c, r, 1, 1)
+    }))
+  }, [artwork])
+  return (
+    <canvas
+      ref={canvasRef}
+      width={artwork.cols}
+      height={artwork.rows}
+      className="rounded-md"
+      style={{ width: '100%', maxWidth: size, aspectRatio: `${artwork.cols} / ${artwork.rows}`, imageRendering: 'pixelated' }}
+    />
+  )
+}
+
+export default function SetupPage({ onNext, onImport, onGoHome }) {
   const [ratio, setRatio] = useState('square')
   const [orientation, setOrientation] = useState('landscape')
   const [levelIndex, setLevelIndex] = useState(0)
+
+  const importInputRef = useRef(null)
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState(null)
+  const [importOptions, setImportOptions] = useState(null) // 칸 수가 애매할 때 고를 후보들
 
   const selectedRatio = RATIOS.find(r => r.id === ratio)
   const grid = getGrid(ratio, orientation, levelIndex)
@@ -80,6 +105,25 @@ export default function SetupPage({ onNext, onGoHome }) {
   useEffect(() => {
     if (selectedRatio.hasOrientation) setOrientation(selectedRatio.defaultOrientation)
   }, [ratio]) // eslint-disable-line
+
+  // 지난 시간에 저장한 그림 파일을 열어 칸 수를 알아낸 뒤, 크기 선택 없이 바로 그 크기로 이어 그린다
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // 같은 파일을 다시 골라도 change 이벤트가 오도록
+    if (!file) return
+    setImportError(null)
+    setImporting(true)
+    try {
+      const result = detectArtwork(await loadImageFile(file))
+      if (result.status === 'ok') onImport(result.artwork)
+      else if (result.status === 'ambiguous') setImportOptions(result.options)
+      else setImportError('이 앱에서 저장한 그림이 아닌 것 같아요. 저장했던 그림 파일을 골라 주세요.')
+    } catch {
+      setImportError('그림 파일을 열 수 없어요. 다른 파일을 골라 주세요.')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   return (
     <div className="relative h-svh w-screen overflow-hidden" style={{ background: PAGE_BG }}>
@@ -95,6 +139,39 @@ export default function SetupPage({ onNext, onGoHome }) {
                 어떤 크기에 그릴까요?
               </h1>
               <p className="text-[1.1rem] sm:text-[1.2375rem] text-gray-400">화면 비율과 픽셀 해상도를 골라요</p>
+            </div>
+
+            {/* ── 이어 그리기: 저장한 그림 불러오기 ─────────────────── */}
+            <div>
+              <div
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 rounded-2xl px-5 py-4"
+                style={{ background: PANEL_BG, border: '1px dashed rgba(247,208,112,0.45)' }}
+              >
+                <div className="min-w-0">
+                  <p className="font-pixel-kr text-lg sm:text-xl text-white">지난번에 그리던 그림이 있나요?</p>
+                  <p className="text-sm sm:text-base text-gray-400 mt-1 leading-snug break-keep">
+                    저장한 그림 파일을 불러오면 크기를 고르지 않아도 그대로 이어서 그려요
+                  </p>
+                </div>
+                <button
+                  onClick={() => importInputRef.current?.click()}
+                  disabled={importing}
+                  className="font-pixel shrink-0 rounded-full px-5 py-3 text-base sm:text-lg text-black transition-all hover:brightness-105 active:scale-[0.97] disabled:opacity-50"
+                  style={{ background: ACCENT_YELLOW }}
+                >
+                  {importing ? '여는 중...' : '그림 불러오기'}
+                </button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImportFile}
+                />
+              </div>
+              {importError && (
+                <p className="mt-2 px-1 text-sm sm:text-base" style={{ color: DANGER }}>{importError}</p>
+              )}
             </div>
 
             <div
@@ -291,6 +368,41 @@ export default function SetupPage({ onNext, onGoHome }) {
           </div>
         </div>
       </div>
+
+      {/* 칸 수를 확실히 알 수 없을 때: 후보 그림을 보여주고 내 그림과 똑같은 것을 고르게 한다 */}
+      {importOptions && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4"
+          onClick={e => e.target === e.currentTarget && setImportOptions(null)}
+        >
+          <div className="w-full max-w-2xl rounded-2xl p-5 sm:p-6" style={{ background: PANEL_BG }}>
+            <p className="font-pixel-kr text-xl sm:text-2xl text-white text-center break-keep">어떤 그림이 내 그림이랑 똑같아 보여요?</p>
+            <p className="text-sm sm:text-base text-gray-400 text-center mt-2">똑같아 보이는 그림을 눌러 주세요</p>
+            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
+              {importOptions.map(opt => (
+                <button
+                  key={`${opt.cols}x${opt.rows}`}
+                  onClick={() => { setImportOptions(null); onImport(opt) }}
+                  className="flex flex-col items-center gap-2 sm:gap-3 rounded-2xl p-2 sm:p-4 transition-all hover:brightness-125 active:scale-[0.98]"
+                  style={{ background: PAGE_BG, border: `1px solid ${ACCENT_YELLOW}` }}
+                >
+                  <ArtworkPreview artwork={opt} />
+                  <span className="font-pixel text-sm sm:text-lg text-white tabular-nums whitespace-nowrap">{opt.cols} × {opt.rows}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => setImportOptions(null)}
+                className="font-pixel rounded-full px-8 py-3 text-white hover:brightness-125"
+                style={{ background: PAGE_BG }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

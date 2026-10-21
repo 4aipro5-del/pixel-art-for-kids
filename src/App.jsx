@@ -54,6 +54,13 @@ export default function App() {
             setEditorKey(k => k + 1)
             navigate('editor')
           }}
+          onImport={(artwork) => {
+            // 파일에서 불러온 그림은 그 칸 수 그대로 캔버스를 열고, 스케치북에는 새 작품으로 쌓인다
+            setCanvasConfig({ cols: artwork.cols, rows: artwork.rows })
+            setResumeArtwork({ ...artwork, id: Date.now(), imported: true })
+            setEditorKey(k => k + 1)
+            navigate('editor')
+          }}
           onGoHome={resetToEntry}
         />
       )}

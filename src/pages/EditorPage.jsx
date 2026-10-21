@@ -7,6 +7,7 @@ import SketchbookModal from '../components/SketchbookModal'
 import copyIcon from '../assets/copy-icon.png'
 import { decodeTracingBitmap, sampleContainColor } from '../utils/tracingBitmap'
 import { drawLoupe } from '../utils/loupe'
+import { PRESET_COLORS } from '../utils/palette'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixel_art_sketchbook'
@@ -18,22 +19,6 @@ const PANEL_BG = '#111214'
 // 항상 최소 1024px, 칸당 최소 32px로 업스케일한 오프스크린 캔버스에 다시 그려 내보낸다.
 const EXPORT_MIN_PX = 1024
 const EXPORT_MIN_CELL_PX = 32
-
-// 크레파스 톤 12색 팔레트 (형광기를 빼고 연두/초록/하늘 경계를 명확히 구분)
-const PRESET_COLORS = [
-  '#E53935', // 빨강
-  '#FF9100', // 주황
-  '#FDD835', // 노랑
-  '#9CCC65', // 연두
-  '#2E7D32', // 초록
-  '#4FC3F7', // 하늘
-  '#1565C0', // 파랑
-  '#8E24AA', // 보라
-  '#6D4C41', // 갈색
-  '#FFFFFF', // 흰색
-  '#9E9E9E', // 회색
-  '#212121', // 검은색
-]
 
 const TOOLS = [
   { id: 'pen',        iconSrc: '/images/draw.png',       title: '펜' },
@@ -206,7 +191,8 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   // 마지막으로 저장을 예약한 pixels 참조 — 최초값과 동일하면(StrictMode의 개발 모드 이펙트
   // 이중 실행 포함) 실제 편집이 아니므로 자동 저장을 건너뛴다.
   const lastQueuedPixelsRef = useRef(pixels)
-  const [saveStatus, setSaveStatus] = useState(resumeArtwork ? 'saved' : 'idle') // 'idle' | 'pending' | 'saved'
+  // 파일에서 불러온 그림은 아직 스케치북에 없으므로, 첫 수정으로 자동 저장되기 전까지 '저장됨'을 띄우지 않는다
+  const [saveStatus, setSaveStatus] = useState(resumeArtwork && !resumeArtwork.imported ? 'saved' : 'idle') // 'idle' | 'pending' | 'saved'
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   // 브라우저 자체 ESC 키 등으로도 전체화면이 풀릴 수 있어, fullscreenchange를 구독해
