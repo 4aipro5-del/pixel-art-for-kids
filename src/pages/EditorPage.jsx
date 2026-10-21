@@ -4,10 +4,12 @@ import PixelCanvas from '../components/PixelCanvas'
 import HelpModal from '../components/HelpModal'
 import DoanView from '../components/DoanView'
 import SketchbookModal from '../components/SketchbookModal'
+import DriveButton from '../components/DriveButton'
 import copyIcon from '../assets/copy-icon.png'
 import { decodeTracingBitmap, sampleContainColor } from '../utils/tracingBitmap'
 import { drawLoupe } from '../utils/loupe'
 import { PRESET_COLORS } from '../utils/palette'
+import { useDrive, saveArtworkToDrive } from '../utils/googleDrive'
 
 const MAX_HISTORY = 20
 const SKETCHBOOK_KEY = 'pixel_art_sketchbook'
@@ -19,6 +21,20 @@ const PANEL_BG = '#111214'
 // 항상 최소 1024px, 칸당 최소 32px로 업스케일한 오프스크린 캔버스에 다시 그려 내보낸다.
 const EXPORT_MIN_PX = 1024
 const EXPORT_MIN_CELL_PX = 32
+// 드라이브 저장은 로컬 자동 저장(0.5초)보다 느긋하게 — 그리는 동안 업로드가 계속 쌓이지 않도록
+const DRIVE_SAVE_DELAY = 3000
+
+// 로컬 스케치북 항목에 그 작품이 저장된 드라이브 파일 ID를 함께 기록해 둔다
+function readSketchbook() {
+  return JSON.parse(localStorage.getItem(SKETCHBOOK_KEY) || '[]')
+}
+function rememberDriveId(projectId, driveId) {
+  const all = readSketchbook()
+  const item = all.find(it => it.id === projectId)
+  if (!item || item.driveId === driveId) return
+  item.driveId = driveId
+  localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all))
+}
 
 const TOOLS = [
   { id: 'pen',        iconSrc: '/images/draw.png',       title: '펜' },
@@ -194,6 +210,15 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
   // 파일에서 불러온 그림은 아직 스케치북에 없으므로, 첫 수정으로 자동 저장되기 전까지 '저장됨'을 띄우지 않는다
   const [saveStatus, setSaveStatus] = useState(resumeArtwork && !resumeArtwork.imported ? 'saved' : 'idle') // 'idle' | 'pending' | 'saved'
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const drive = useDrive()
+  const driveSignedIn = drive.status === 'signedIn'
+  // 지금 작업 중인 작품이 저장될 드라이브 파일 — driveProjectRef는 이 ID가 어느 슬롯(projectId)의 것인지
+  const driveIdRef = useRef(resumeArtwork?.driveId || null)
+  const driveProjectRef = useRef(projectIdRef.current)
+  const driveQueueRef = useRef(Promise.resolve()) // 업로드가 겹치지 않도록 한 줄로 세운다
+  const driveTimerRef = useRef(null)
+  const lastDriveQueuedRef = useRef(pixels)
+  const [driveSaveStatus, setDriveSaveStatus] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
 
   // 브라우저 자체 ESC 키 등으로도 전체화면이 풀릴 수 있어, fullscreenchange를 구독해
   // 버튼 아이콘/상태를 실제 전체화면 여부와 항상 동기화한다.
@@ -450,16 +475,69 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     if (idx >= 0) {
       all[idx] = { ...all[idx], ...entry }
     } else {
-      all.unshift({ createdAt: now, ...entry })
+      // 드라이브에서 연 작품은 이 기기 스케치북에 처음 저장될 때 드라이브 파일 ID도 함께 남긴다
+      const driveId = driveProjectRef.current === projectIdRef.current ? driveIdRef.current : null
+      all.unshift({ createdAt: now, ...entry, ...(driveId ? { driveId } : {}) })
     }
     localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
     currentFileNameRef.current = entry.fileName
     return entry
   }, [isDirty, buildSketchbookEntry, buildDefaultFileName])
 
+  // 현재 슬롯의 그림을 로그인한 사람의 구글 드라이브에 PNG로 올린다(같은 작품이면 같은 파일을 덮어씀)
+  const syncToDrive = useCallback(() => {
+    if (!driveSignedIn || !isDirty) return
+    const projectId = projectIdRef.current
+    const fileName = currentFileNameRef.current || buildDefaultFileName()
+    const blobPromise = getCanvasBlob()
+    setDriveSaveStatus('saving')
+    driveQueueRef.current = driveQueueRef.current.then(async () => {
+      const blob = await blobPromise
+      if (!blob) return
+      if (driveProjectRef.current !== projectId) {
+        driveProjectRef.current = projectId
+        driveIdRef.current = readSketchbook().find(it => it.id === projectId)?.driveId || null
+      }
+      const id = await saveArtworkToDrive({ driveId: driveIdRef.current, fileName, blob, cols: gridCols, rows: gridRows })
+      if (driveProjectRef.current === projectId) driveIdRef.current = id
+      rememberDriveId(projectId, id)
+      setDriveSaveStatus('saved')
+    }).catch(() => setDriveSaveStatus('error'))
+  }, [driveSignedIn, isDirty, buildDefaultFileName, getCanvasBlob, gridCols, gridRows])
+  const syncToDriveRef = useRef(syncToDrive); syncToDriveRef.current = syncToDrive
+
+  // 예약된 드라이브 저장이 있으면 기다리지 않고 지금 바로 올린다 — 슬롯이 바뀌거나 화면을 떠나기 직전
+  const flushDriveSync = useCallback(() => {
+    if (!driveTimerRef.current) return
+    clearTimeout(driveTimerRef.current)
+    driveTimerRef.current = null
+    syncToDriveRef.current()
+  }, [])
+
+  // 그림이 바뀔 때마다 3초 디바운스 후 드라이브에 저장. 그리다가 로그인했다면 지금까지 그린 그림도
+  // 올라간다(lastDriveQueuedRef는 로그인 상태에서만 갱신되므로 로그인 직후엔 현재 그림과 다르다).
+  useEffect(() => {
+    if (!driveSignedIn || !isDirty) return
+    if (pixels === lastDriveQueuedRef.current) return
+    lastDriveQueuedRef.current = pixels
+    clearTimeout(driveTimerRef.current)
+    driveTimerRef.current = setTimeout(() => {
+      driveTimerRef.current = null
+      syncToDriveRef.current()
+    }, DRIVE_SAVE_DELAY)
+  }, [pixels, driveSignedIn, isDirty])
+
+  // 로그인이 만료돼 저장에 실패했다가 다시 연결하면, 그림을 더 고치지 않아도 바로 다시 올린다
+  useEffect(() => {
+    if (driveSignedIn && driveSaveStatus === 'error') syncToDriveRef.current()
+  }, [driveSignedIn]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => flushDriveSync, [flushDriveSync]) // 편집 화면을 떠날 때 남은 저장을 마저 올린다
+
   const handleClearAll = () => {
     // 캔버스를 비우기 직전까지 그린 그림을 디바운스 없이 즉시 저장
     persistCurrentSlot()
+    flushDriveSync()
     setSaveStatus('saved')
     // 지금까지의 작업은 안전하게 보존했으니, 이제부터의 자동 저장은 새 캔버스를 대상으로 하도록 새 프로젝트 ID 발급
     projectIdRef.current = Date.now()
@@ -505,12 +583,14 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
     localStorage.setItem(SKETCHBOOK_KEY, JSON.stringify(all.slice(0, 50)))
 
     // 이후 자동 저장이 지금 저장한 이 항목을 계속 덮어쓰도록 세션의 저장 대상을 갱신
+    flushDriveSync()
     projectIdRef.current = entryId
     currentFileNameRef.current = name
     setSaveStatus('saved')
+    syncToDrive()
 
     setIsSaveModalOpen(false)
-  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getCanvasBlob, userName])
+  }, [saveFileName, buildDefaultFileName, buildSketchbookEntry, getCanvasBlob, userName, flushDriveSync, syncToDrive])
 
   // 실시간 자동 저장: 그림이 바뀔 때마다 500ms 디바운스 후 localStorage 스케치북을
   // 현재 프로젝트 ID로 덮어쓴다. pixels 참조가 마지막 예약 시점과 같으면(최초 마운트,
@@ -600,6 +680,15 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
             >
               {saveStatus === 'pending' ? '● 저장 중...' : '✓ 스케치북에 자동 저장됨'}
             </span>
+            {(driveSignedIn || drive.status === 'expired') && driveSaveStatus !== 'idle' && (
+              <span
+                className="ml-3 text-sm font-medium whitespace-nowrap"
+                style={{ color: driveSaveStatus === 'error' ? DANGER : driveSaveStatus === 'saving' ? '#fde68a' : '#86efac' }}
+              >
+                {driveSaveStatus === 'saving' ? '● 드라이브에 올리는 중...'
+                  : driveSaveStatus === 'error' ? '! 드라이브 저장 안 됨' : '✓ 드라이브에도 저장됨'}
+              </span>
+            )}
           </div>
 
           {/* Edit controls */}
@@ -641,6 +730,7 @@ export default function EditorPage({ userName, gridCols, gridRows, resumeArtwork
               사용법 안내
             </button>
             <div className="w-px h-5 mx-1 shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <DriveButton onError={showToast} />
             <HeaderBtn onClick={handleOpenSketchbook} title="나의 스케치북">
               <img src="/images/photo.png" alt="나의 스케치북" className="w-5 h-5 invert" />
             </HeaderBtn>
