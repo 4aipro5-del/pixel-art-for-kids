@@ -39,7 +39,7 @@ const PREVIEW_COLORS = {
 function PixelBoardPreview() {
   return (
     <div
-      className="relative mx-auto w-full max-w-[15rem] rounded-2xl bg-white p-3"
+      className="pixel-board-preview relative mx-auto w-full max-w-[15rem] rounded-2xl bg-white p-3"
       style={{ boxShadow: '0 16px 40px rgba(0,0,0,0.45)' }}
       aria-hidden="true"
     >
@@ -79,7 +79,7 @@ export default function EntryPage({ onNext }) {
   }
 
   return (
-    <div className="relative h-svh w-screen overflow-y-auto" style={{ background: PAGE_BG }}>
+    <div className="entry-page relative h-svh w-screen overflow-y-auto" style={{ background: PAGE_BG }}>
 
       {/* 은은한 노란 전구빛 글로우 — 화면 중앙에서 부드럽게 퍼짐 */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -93,23 +93,15 @@ export default function EntryPage({ onNext }) {
         />
       </div>
 
-      <main className="relative flex min-h-svh w-full items-center justify-center px-4 py-6 sm:px-8">
-        <div className="flex w-full max-w-3xl flex-col items-center gap-4 text-center sm:gap-5">
+      <main className="entry-shell relative flex min-h-svh w-full items-center justify-center">
+        <div className="entry-content flex w-full flex-col items-center text-center">
 
-          <img
-            src="/images/logo.png"
-            alt="오늘의 그림"
-            width={463}
-            height={120}
-            loading="eager"
-            decoding="async"
-            className="mx-auto block h-9 w-auto select-none"
-          />
+          <p className="entry-eyebrow select-none">오늘의 그림</p>
 
           <h1
-            className="font-pixel-en flex justify-center whitespace-nowrap leading-[1.4] select-none"
+            className="entry-title font-pixel-en flex justify-center whitespace-nowrap leading-[1.4] select-none"
             style={{
-              fontSize: 'clamp(1.6rem, 9vw, 4rem)',
+              fontSize: 'clamp(2rem, 6vw, 4rem)',
               letterSpacing: '0.02em',
               gap: '0.35em',
               color: ACCENT_YELLOW,
@@ -131,12 +123,12 @@ export default function EntryPage({ onNext }) {
 
           <PixelBoardPreview />
 
-          <p className="font-pixel text-xl text-gray-400 sm:text-2xl">
+          <p className="entry-description text-gray-300">
             나만의 픽셀 아트를 그려봐요.
           </p>
 
-          <form onSubmit={handleSubmit} className="flex w-full flex-col items-center gap-4 sm:gap-5">
-            <div className="w-full rounded-2xl px-8 py-4 sm:py-5" style={{ background: PANEL_BG }}>
+          <form onSubmit={handleSubmit} className="entry-form flex w-full flex-col items-center">
+            <div className="entry-input-wrap w-full rounded-2xl" style={{ background: PANEL_BG }}>
               <input
                 id="entry-name"
                 type="text"
@@ -145,7 +137,7 @@ export default function EntryPage({ onNext }) {
                 placeholder="이름을 입력해요..."
                 maxLength={10}
                 autoFocus
-                className="font-pixel w-full bg-transparent text-center text-2xl text-white outline-none placeholder:text-gray-600 sm:text-3xl"
+                className="entry-input w-full bg-transparent text-center text-white outline-none placeholder:text-gray-600"
               />
             </div>
 
@@ -155,7 +147,7 @@ export default function EntryPage({ onNext }) {
 
             <button
               type="submit"
-              className="font-pixel flex w-full items-center justify-center gap-2 rounded-full px-8 py-5 text-2xl leading-none text-black transition-all hover:brightness-105 active:scale-[0.98] sm:py-6 sm:text-3xl"
+              className="entry-button flex w-full items-center justify-center gap-2 rounded-full text-black transition-all hover:brightness-105 active:scale-[0.98]"
               style={{ background: ACCENT_YELLOW, boxShadow: '0 8px 24px rgba(247,208,112,0.25)' }}
             >
               <span className="leading-none">시작하기</span>

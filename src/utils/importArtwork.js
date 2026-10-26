@@ -102,6 +102,11 @@ function buildArtwork({ cols, rows, colors }) {
   return { cols, rows, pixels }
 }
 
+// 칸 수를 이미 알고 있을 때(드라이브에 칸 수를 함께 저장해 둔 그림) — 추정 없이 바로 복원
+export function decodeArtwork(image, cols, rows) {
+  return buildArtwork(measureGrid(image, cols, rows))
+}
+
 // 결과:
 //  { status: 'ok', artwork }            — 격자를 확실히 찾음
 //  { status: 'ambiguous', options }     — 후보가 애매해서 사용자가 미리보기를 보고 골라야 함
