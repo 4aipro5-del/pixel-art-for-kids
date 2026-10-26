@@ -2,8 +2,10 @@ import { useSyncExternalStore } from 'react'
 
 // 구글 로그인 + 드라이브 저장. 서버 없이 브라우저가 구글 드라이브 API를 직접 부른다.
 // 권한은 drive.file — 이 앱이 만든 파일에만 접근할 수 있어 사용자의 다른 드라이브 파일은 볼 수 없다.
-// 클라이언트 ID는 비밀값이 아니다(브라우저에 그대로 노출되는 공개 식별자). 비어 있으면 드라이브 기능을 숨긴다.
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+// 클라이언트 ID는 비밀값이 아니다(브라우저에 그대로 노출되는 공개 식별자). 환경변수로 바꿔 끼울 수 있고,
+// 빈 문자열이면 드라이브 기능을 숨긴다.
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  ?? '216081087813-rkq7vhviuk6f6t7c77g44rmi2hse2bst.apps.googleusercontent.com'
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.file'
 const GIS_SRC = 'https://accounts.google.com/gsi/client'

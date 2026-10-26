@@ -71,6 +71,11 @@ body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
 }
 
+button,
+input {
+  font: inherit;
+}
+
 canvas {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -99,6 +104,320 @@ canvas {
    서체로 가독성을 살린다. 글자 크기는 각 사용처에서 14~15px 사이로 지정한다. */
 .font-code {
   font-family: 'Nanum Gothic Coding', monospace;
+}
+
+/* 시작 화면: 한국어 UI는 읽기 쉬운 산세리프, 영문 로고만 픽셀 폰트를 사용한다. */
+.entry-shell {
+  padding: clamp(1rem, 2.4vw, 2rem);
+}
+
+.entry-content {
+  max-width: 56rem;
+  gap: clamp(0.75rem, 1.8vh, 1.25rem);
+}
+
+.entry-eyebrow {
+  margin: 0;
+  color: #c5c8cc;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.entry-title {
+  margin: 0;
+}
+
+.entry-description {
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.entry-form {
+  gap: 0.875rem;
+}
+
+.entry-input-wrap {
+  padding: 1rem 1.5rem;
+}
+
+.entry-input {
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.entry-button {
+  padding: 1.125rem 2rem;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+/* 크기 선택 화면: 넓은 화면은 2열로 공간을 쓰고, 낮은 화면에서는 높이를 압축한다. */
+.setup-shell {
+  padding: clamp(1rem, 2vw, 1.75rem) clamp(1rem, 3vw, 2.5rem);
+}
+
+.setup-content {
+  max-width: 74rem;
+  gap: 1rem;
+}
+
+.setup-title h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 850;
+  letter-spacing: -0.045em;
+}
+
+.setup-title p {
+  margin: 0.4rem 0 0;
+  font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+
+.setup-import {
+  gap: 1rem;
+  padding: 0.875rem 1.125rem;
+}
+
+.setup-import-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.setup-import-description {
+  font-size: 0.875rem;
+}
+
+.setup-import-button {
+  padding: 0.7rem 1.125rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.setup-summary {
+  padding: 0.75rem 1rem;
+}
+
+.setup-summary > div:first-child {
+  gap: 0.875rem;
+}
+
+.setup-summary-icon {
+  width: 3rem;
+  height: 3rem;
+}
+
+.setup-summary-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.setup-summary-badge {
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.setup-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+.setup-section-title {
+  margin-bottom: 0.625rem;
+}
+
+.setup-card-grid {
+  gap: 0.625rem;
+}
+
+.setup-card {
+  min-width: 0;
+  min-height: 9.75rem;
+  gap: 0.625rem;
+  padding: 1rem 0.5rem;
+}
+
+.setup-ratio-preview {
+  height: 3.25rem;
+}
+
+.setup-card-name {
+  font-size: clamp(1rem, 1.7vw, 1.2rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.setup-card-description {
+  font-size: 0.82rem;
+}
+
+.setup-grid-size {
+  font-size: clamp(0.8rem, 1.4vw, 1rem);
+  line-height: 1.5;
+}
+
+.setup-level-badge {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.setup-orientation-button {
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.setup-cta {
+  gap: 0.75rem;
+  margin: 0 -1rem;
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.setup-home {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.setup-home-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.setup-start {
+  padding: 0.95rem clamp(2rem, 7vw, 5rem);
+  font-size: 1.05rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 900px) {
+  .setup-shell {
+    justify-content: center;
+  }
+
+  .setup-content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.125rem;
+    row-gap: 0.875rem;
+  }
+
+  .setup-title,
+  .setup-import,
+  .setup-summary,
+  .setup-orientation,
+  .setup-cta {
+    grid-column: 1 / -1;
+  }
+
+  .setup-ratio {
+    grid-column: 1;
+  }
+
+  .setup-levels {
+    grid-column: 2;
+  }
+
+  .setup-cta {
+    position: static;
+    margin: 0;
+    padding: 0.125rem 0 0;
+    background: none !important;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 900px) {
+  .setup-shell {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .setup-content {
+    row-gap: 0.625rem;
+  }
+
+  .setup-title h1 {
+    font-size: 2rem;
+  }
+
+  .setup-title p {
+    margin-top: 0.2rem;
+    font-size: 0.9rem;
+  }
+
+  .setup-import {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .setup-summary {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .setup-summary-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .setup-card {
+    min-height: 8.6rem;
+    gap: 0.45rem;
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .setup-ratio-preview {
+    height: 2.8rem;
+  }
+
+  .setup-card-description {
+    display: none;
+  }
+
+  .setup-home {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .setup-start {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+}
+
+@media (max-height: 720px) {
+  .entry-content {
+    gap: 0.625rem;
+  }
+
+  .pixel-board-preview {
+    max-width: 11rem;
+    padding: 0.6rem;
+  }
+
+  .entry-input-wrap {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .entry-button {
+    padding-top: 0.95rem;
+    padding-bottom: 0.95rem;
+  }
 }
 
 @keyframes pixel-float {
